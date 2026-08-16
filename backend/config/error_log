@@ -1,0 +1,4 @@
+[26-Jul-2026 05:48:29 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function env() in /home/aveenxyz/shop.aveen.xyz/backend/config/app.php:16
+Stack trace:
+#0 {main}
+  thrown in /home/aveenxyz/shop.aveen.xyz/backend/config/app.php on line 16
