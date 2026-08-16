@@ -48,6 +48,20 @@ database/TRUST-GROUP-ERP-COMPLETE-FRESH-INSTALL.sql
 SQL import করলে পরে `migrate:fresh`, `db:wipe` বা `--seed` চালাবেন না—এগুলো
 data reset করতে পারে।
 
+### পুরোনো (৪ কোম্পানির) database আপগ্রেড
+
+আগের version-এ তৈরি database-এ উপরের fresh-install file **import করবেন না**—
+তাতে সব live data মুছে যাবে। আগে database backup নিন, তারপর একবার import করুন:
+
+```text
+database/UPGRADE-STF-GROUP-5-COMPANIES.sql
+```
+
+এটি পুরোনো ৪টি কোম্পানির নাম আপডেট করে, ৫ম কোম্পানি
+TRUST AND FIRST TRADING (GARAGE) যোগ করে, QID ১৫ / Passport ৯০ / Istimara ৩০
+দিনের alert setting যোগ করে এবং Labour Contract-কে staff document বানায়।
+Script-টি একাধিকবার চালালেও কোনো ক্ষতি হবে না।
+
 ## ৪. Environment
 
 `backend/.env.example` copy করে `backend/.env` বানান। অন্তত এগুলো পরিবর্তন করুন:

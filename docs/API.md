@@ -47,6 +47,40 @@ Supported resource names are defined centrally in
 Files accept PDF/JPG/PNG, are MIME-inspected, size-limited and stored outside the
 public web root.
 
+Company logos are the one exception to `files.download`: because they are shown
+throughout the UI, `GET /files/{file}` also serves a logo to any user holding
+`companies.view`. Logo reads are not written to the audit log.
+
+Upload a logo by sending a base64 data URL on the company resource:
+
+```json
+{ "name": "…", "code": "SAS", "logoUrl": "data:image/png;base64,…", "logoFileName": "logo.png" }
+```
+
+Send `"removeLogo": true` to clear it. Only PNG and JPG are accepted.
+
+## Expiry alerts
+
+`GET /dashboard` returns `documentTypeAlerts`, keyed by document type code, so
+the UI can render one alert per tracked document:
+
+```json
+{
+  "documentTypeAlerts": {
+    "qid":      { "name": "QID",      "leadDays": 15, "expiringCount": 2, "expiredCount": 1 },
+    "passport": { "name": "Passport", "leadDays": 90, "expiringCount": 3, "expiredCount": 0 },
+    "istimara": { "name": "Istimara", "leadDays": 30, "expiringCount": 1, "expiredCount": 0 }
+  }
+}
+```
+
+The warning window comes from `document_types.alert_lead_days`, which is
+editable per type in Settings → Document Types. The same value also drives the
+`status` field on every document (`expired`, `expires_today`, `critical`,
+`warning`, `valid`) and adds a matching reminder day to the notification scan.
+Matching counts are exposed on `stats` as `expiringQid`, `expiringPassport`,
+`expiringIstimara` and their `expired…` counterparts.
+
 ## Reminders and templates
 
 | Method | Endpoint | Purpose |

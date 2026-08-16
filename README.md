@@ -13,8 +13,14 @@ document-expiry, vehicle and notification management system.
 
 ## Included
 
-- Four isolated companies: Trust Limousine, Trust Contracting, Trust Delivery
-  and Fly Safe
+- Five isolated companies: Seaf Al Safer Limousine, Trust And First Trading And
+  Contracting, Trust And First Delivery Services, Fly Safe Travels And Tours and
+  Trust And First Trading (Garage)
+- Per-company logo upload (PNG/JPG) with an automatic code-badge fallback
+- Dedicated Seaf Al Safer Limousine workspace: staff details, identity document
+  uploads (QID, Passport, Driving Licence, Labour Contract) and vehicle Istimara
+- Expiry alert box driven by per-document-type lead times: QID 15 days,
+  Passport 90 days, Istimara 30 days
 - Normalized relational database (33 tables; no JSON state blob)
 - Real server-enforced RBAC, multi-role users and company scope
 - Audited Super Admin impersonation/role testing
@@ -26,6 +32,8 @@ document-expiry, vehicle and notification management system.
 - Archive/restore, audit log, queue status and failed-job retry
 - Production frontend already built into `backend/public`
 - Complete fresh-install SQL and Laravel migrations/seeders
+- `database/UPGRADE-STF-GROUP-5-COMPANIES.sql` to upgrade an existing 4-company
+  database in place, without losing any live data
 
 ## Start here
 
@@ -52,7 +60,7 @@ after the first login.
 
 The seed contains system configuration only:
 
-- 4 companies
+- 5 companies
 - 5 system roles and their permissions
 - 16 document types
 - 2 default notification templates

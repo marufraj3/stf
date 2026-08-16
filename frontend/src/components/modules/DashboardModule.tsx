@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { db } from '../../services/db';
 import { StatusBadge } from '../common/StatusBadge';
+import { ExpiryAlertBox } from '../common/ExpiryAlertBox';
 import { DocumentRecord } from '../../types';
 import { NavTab } from '../layout/Sidebar';
 
@@ -129,6 +130,35 @@ export const DashboardModule: React.FC<DashboardModuleProps> = ({
             {dashboardQuery.error instanceof Error ? dashboardQuery.error.message : 'Unable to refresh dashboard.'}
           </p>
         )}
+      </div>
+
+      {/* Expiry notification box: QID 15 / Passport 90 / Istimara 30 days */}
+      <ExpiryAlertBox
+        alerts={dashboardQuery.data?.documentTypeAlerts}
+        isLoading={dashboardQuery.isLoading}
+        onSelect={(code, status) => {
+          const type = docTypes.find(item => item.code === code);
+          if (type) setSelectedDocType(type.id);
+          setSelectedExpiryStatus(status);
+          onNavigate('documents', status);
+        }}
+      />
+
+      {/* Per-document-type summary counts */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {[
+          ['Total Staff', stats.totalEmployees, 'text-slate-900'],
+          ['Total Vehicles', stats.totalVehicles, 'text-slate-900'],
+          ['Expiring QID', stats.expiringQid, 'text-amber-700'],
+          ['Expiring Passport', stats.expiringPassport, 'text-amber-700'],
+          ['Expiring Istimara', stats.expiringIstimara, 'text-amber-700'],
+          ['Expired Documents', stats.expiredDocuments, 'text-rose-700'],
+        ].map(([label, value, tone]) => (
+          <div key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
+            <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
+            <span className={`mt-1 block text-2xl font-extrabold ${tone}`}>{value}</span>
+          </div>
+        ))}
       </div>
 
       {/* KPI Cards Grid - Top Row: Primary HR & Document Counts */}

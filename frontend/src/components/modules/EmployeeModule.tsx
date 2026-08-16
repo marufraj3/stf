@@ -84,9 +84,13 @@ export const EmployeeModule: React.FC<EmployeeModuleProps> = ({ onOpenRenewModal
     const qid = byCode('qid');
     const passport = byCode('passport');
     const license = byCode('driving-license');
+    const labour = byCode('labour-contract');
 
     return {
       ...emp,
+      labourContractNumber: labour?.documentNumber || '',
+      labourContractExpiryDate: labour?.expiryDate || '',
+      labourContractFileUrl: labour?.fileUrl,
       qidNumber: qid?.documentNumber || '',
       qidExpiryDate: qid?.expiryDate || '',
       qidFileUrl: qid?.fileUrl,
@@ -96,7 +100,7 @@ export const EmployeeModule: React.FC<EmployeeModuleProps> = ({ onOpenRenewModal
       licenseNumber: license?.documentNumber || '',
       licenseExpiryDate: license?.expiryDate || '',
       licenseFileUrl: license?.fileUrl,
-      uploadedDocuments: [qid, passport, license]
+      uploadedDocuments: [qid, passport, license, labour]
         .filter((document): document is DocumentRecord => Boolean(document))
         .map(document => ({
           id: document.id,

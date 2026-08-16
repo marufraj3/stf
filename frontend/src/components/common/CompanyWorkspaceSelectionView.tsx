@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Building2, ArrowRight, Users, LogOut, ShieldCheck } from 'lucide-react';
 import { Company } from '../../types';
 import { db } from '../../services/db';
+import { CompanyLogo } from './CompanyLogo';
 
 interface CompanyWorkspaceSelectionViewProps {
   onSelectCompany: (companyId: string) => void;
@@ -63,7 +64,7 @@ export const CompanyWorkspaceSelectionView: React.FC<CompanyWorkspaceSelectionVi
         </div>
 
         {/* Company Cards Grid matching Screenshot 1 */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {companies.map((company) => {
             const empCount = employeeCounts[company.id] || 0;
 
@@ -73,9 +74,18 @@ export const CompanyWorkspaceSelectionView: React.FC<CompanyWorkspaceSelectionVi
                 className="bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-xl hover:border-purple-300 transition-all duration-200 p-6 flex flex-col justify-between group"
               >
                 <div>
-                  {/* Company Badge Pill */}
-                  <div className="inline-block bg-purple-600 text-white font-black text-xs px-3 py-1.5 rounded-xl uppercase tracking-wider mb-5 shadow-xs">
-                    {company.code}
+                  {/* Company logo, falling back to a code badge */}
+                  <div className="mb-5 flex items-center gap-2.5">
+                    <CompanyLogo
+                      code={company.code}
+                      name={company.name}
+                      logoUrl={company.logoUrl}
+                      sizeClass="w-14 h-14"
+                      textClass="text-sm"
+                    />
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {company.code}
+                    </span>
                   </div>
 
                   {/* Company Full Name */}

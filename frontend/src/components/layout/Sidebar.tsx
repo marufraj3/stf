@@ -3,12 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { 
   LayoutDashboard, Users, FileText, Settings2, Car, 
   Building, Bell, MessageSquareCode, BarChart3, UploadCloud, 
-  History, Settings, ShieldAlert, AlertTriangle
+  History, Settings, ShieldAlert, AlertTriangle, CarTaxiFront
 } from 'lucide-react';
 import { db } from '../../services/db';
 
 export type NavTab = 
   | 'dashboard' 
+  | 'limousine'
   | 'employees' 
   | 'documents' 
   | 'doc-types' 
@@ -35,6 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
 
   const navItems = ([ 
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view' },
+    { id: 'limousine', label: 'Seaf Al Safer Limousine', icon: CarTaxiFront, permission: 'employees.view' },
     { id: 'employees', label: 'Employees', icon: Users, permission: 'employees.view', badge: stats.totalEmployees, badgeColor: 'bg-slate-700 text-slate-200' },
     { id: 'documents', label: 'Dynamic Documents', icon: FileText, permission: 'documents.view', badge: stats.expiredDocuments > 0 ? stats.expiredDocuments : undefined, badgeColor: 'bg-rose-500 text-white animate-pulse' },
     { id: 'doc-types', label: 'Document Types', icon: Settings2, permission: 'document_types.view' },

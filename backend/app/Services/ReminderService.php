@@ -167,15 +167,27 @@ class ReminderService
         $company = Company::query()->find($document->company_id);
         $global = SystemSetting::whereNull('company_id')->where('key', 'application')->first()?->value ?? [];
 
+        $days = array_map('intval', Arr::wrap(
+            $rule?->reminder_days
+            ?? $type?->custom_reminder_days
+            ?? $company?->reminder_days
+            ?? $global['globalReminderDays']
+            ?? [30, 15, 10, 7, 3, 1, 0]
+        ));
+
+        // Always notify on the day the dashboard first raises its warning, so a
+        // 90-day Passport alert is not silent until the generic 30-day mark.
+        if ($type && !$rule) {
+            $leadDays = $type->alertLeadDays();
+            if (!in_array($leadDays, $days, true)) {
+                $days[] = $leadDays;
+            }
+        }
+        rsort($days);
+
         return [
             'active' => (bool) ($type?->reminder_enabled ?? true),
-            'days' => array_map('intval', Arr::wrap(
-                $rule?->reminder_days
-                ?? $type?->custom_reminder_days
-                ?? $company?->reminder_days
-                ?? $global['globalReminderDays']
-                ?? [30, 15, 10, 7, 3, 1, 0]
-            )),
+            'days' => $days,
             'channels' => Arr::wrap($rule?->channels ?? ['email', 'sms', 'whatsapp']),
             'recipients' => Arr::wrap($rule?->recipients ?? ['owner']),
         ];

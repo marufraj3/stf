@@ -47,8 +47,18 @@ export type ServerPage<T> = {
   totalPages: number;
 };
 
+export type DocumentTypeAlert = {
+  code: string;
+  name: string;
+  leadDays: number;
+  expiringCount: number;
+  expiredCount: number;
+};
+
 export type DashboardData = {
   stats: ExpiryCounts;
+  /** Keyed by document type code: qid, passport, istimara. */
+  documentTypeAlerts?: Record<string, DocumentTypeAlert>;
   urgentDocuments: DocumentRecord[];
   employeeCountsByCompany: Record<string, number>;
   appliedFilters: Record<string, unknown>;
@@ -297,6 +307,7 @@ class ApiBackedDatabase {
   }
 
   async listVehicles(params: {
+    companyId?: string;
     search?: string;
     status?: string;
     includeArchived?: boolean;
@@ -307,6 +318,7 @@ class ApiBackedDatabase {
     direction?: 'asc' | 'desc';
   }): Promise<ServerPage<Vehicle>> {
     return this.listResource<Vehicle>('vehicles', {
+      company_id: params.companyId,
       search: params.search,
       status: params.status === 'archived' ? undefined : params.status,
       include_archived: params.includeArchived,
@@ -732,7 +744,28 @@ class ApiBackedDatabase {
     const today = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Qatar', year: 'numeric', month: '2-digit', day: '2-digit',
     }).format(new Date());
+    const trackedCounts = (code: string) => {
+      const type = this.data.documentTypes.find(item => item.code === code);
+      const leadDays = type?.alertLeadDays || 30;
+      const scoped = documents.filter(item => item.documentTypeCode === code);
+      return {
+        expiring: scoped.filter(
+          item => (item.daysRemaining ?? -1) >= 0 && (item.daysRemaining ?? 9999) <= leadDays,
+        ).length,
+        expired: scoped.filter(item => item.status === 'expired').length,
+      };
+    };
+    const qid = trackedCounts('qid');
+    const passport = trackedCounts('passport');
+    const istimara = trackedCounts('istimara');
+
     return {
+      expiringQid: qid.expiring,
+      expiredQid: qid.expired,
+      expiringPassport: passport.expiring,
+      expiredPassport: passport.expired,
+      expiringIstimara: istimara.expiring,
+      expiredIstimara: istimara.expired,
       totalEmployees: employees.length,
       activeEmployees: employees.filter(item => item.status === 'active').length,
       cancelledEmployees: employees.filter(item => item.status === 'cancelled').length,

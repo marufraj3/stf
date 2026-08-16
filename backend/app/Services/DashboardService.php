@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Document;
+use App\Models\DocumentType;
 use App\Models\Employee;
 use App\Models\NotificationLog;
 use App\Models\User;
@@ -54,12 +55,21 @@ class DashboardService
 
         $urgent = clone $documents;
         $urgent->whereNotNull('expiry_date')
-            ->whereDate('expiry_date', '<=', $today->addDays(30)->toDateString())
+            ->whereDate('expiry_date', '<=', $today->addDays(90)->toDateString())
             ->orderBy('expiry_date')
             ->limit(8);
 
+        $trackedAlerts = $this->trackedTypeAlerts($documents, $today);
+
         return [
+            'documentTypeAlerts' => $trackedAlerts,
             'stats' => [
+                'expiringQid' => $trackedAlerts['qid']['expiringCount'] ?? 0,
+                'expiredQid' => $trackedAlerts['qid']['expiredCount'] ?? 0,
+                'expiringPassport' => $trackedAlerts['passport']['expiringCount'] ?? 0,
+                'expiredPassport' => $trackedAlerts['passport']['expiredCount'] ?? 0,
+                'expiringIstimara' => $trackedAlerts['istimara']['expiringCount'] ?? 0,
+                'expiredIstimara' => $trackedAlerts['istimara']['expiredCount'] ?? 0,
                 'totalEmployees' => (clone $employees)->count(),
                 'activeEmployees' => (clone $employees)->where('status', 'active')->count(),
                 'cancelledEmployees' => (clone $employees)->where('status', 'cancelled')->count(),
@@ -97,6 +107,56 @@ class DashboardService
             'appliedFilters' => $filters,
             'generatedAt' => CarbonImmutable::now('Asia/Qatar')->toIso8601String(),
         ];
+    }
+
+    /**
+     * Per-document-type alert buckets for the dashboard notification box.
+     *
+     * Each tracked type uses its own lead time (QID 15 days, Passport 90 days,
+     * Istimara 30 days) so the yellow warning appears exactly when the
+     * business expects it.
+     *
+     * @return array<string,array{code:string,name:string,leadDays:int,expiringCount:int,expiredCount:int}>
+     */
+    private function trackedTypeAlerts(Builder $documents, CarbonImmutable $today): array
+    {
+        $types = DocumentType::query()
+            ->whereIn('code', ['qid', 'passport', 'istimara'])
+            ->get()
+            ->keyBy('code');
+
+        $alerts = [];
+        foreach (['qid', 'passport', 'istimara'] as $code) {
+            $type = $types->get($code);
+            if (!$type) {
+                continue;
+            }
+
+            $leadDays = $type->alertLeadDays();
+            $expiring = (clone $documents)
+                ->where('document_type_id', $type->id)
+                ->whereNotNull('expiry_date')
+                ->whereBetween('expiry_date', [
+                    $today->toDateString(),
+                    $today->addDays($leadDays)->toDateString(),
+                ])
+                ->count();
+            $expired = (clone $documents)
+                ->where('document_type_id', $type->id)
+                ->whereNotNull('expiry_date')
+                ->whereDate('expiry_date', '<', $today->toDateString())
+                ->count();
+
+            $alerts[$code] = [
+                'code' => $code,
+                'name' => $type->name,
+                'leadDays' => $leadDays,
+                'expiringCount' => $expiring,
+                'expiredCount' => $expired,
+            ];
+        }
+
+        return $alerts;
     }
 
     private function companyQuery(Builder $query, User $user, ?int $companyId): Builder

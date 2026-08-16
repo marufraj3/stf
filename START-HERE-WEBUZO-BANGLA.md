@@ -69,6 +69,13 @@ database/TRUST-GROUP-ERP-COMPLETE-FRESH-INSTALL.sql
 
 পুরোনো ৬-table বা plain-PHP SQL import করবেন না।
 
+আগের ৪-কোম্পানির version আগে থেকে চালু থাকলে উপরের file import করবেন না।
+Backup নিয়ে শুধু এটি একবার import করুন (live data অক্ষত থাকবে):
+
+```text
+database/UPGRADE-STF-GROUP-5-COMPANIES.sql
+```
+
 ## ৫. Environment File
 
 `backend/.env.example` copy করে `backend/.env` বানিয়ে অন্তত এগুলো দিন:

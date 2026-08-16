@@ -96,7 +96,9 @@ class ApiPresenter
             'poBox' => $company->po_box,
             'city' => $company->city,
             'country' => $company->country,
-            'logoUrl' => $this->fileUrl($company->logo_path),
+            // Branding, not a controlled document: anyone who can see the
+            // company may load its logo.
+            'logoUrl' => $company->logo_path ? '/files/'.$company->logo_path : null,
             'active' => $company->is_active,
             'createdAt' => $company->created_at?->toIso8601String(),
         ];
@@ -217,6 +219,7 @@ class ApiPresenter
             'fileRequired' => $type->file_required,
             'reminderEnabled' => $type->reminder_enabled,
             'customReminderDays' => $type->custom_reminder_days ?? [],
+            'alertLeadDays' => $type->alertLeadDays(),
             'defaultValidityMonths' => $type->default_validity_months,
             'active' => $type->is_active,
         ];
@@ -232,7 +235,7 @@ class ApiPresenter
             : ($document->current_file_id
                 ? \App\Models\StoredFile::query()->find($document->current_file_id)
                 : null);
-        $status = $this->expiryStatus($document->expiry_date);
+        $status = $this->expiryStatus($document->expiry_date, $type?->alertLeadDays());
 
         return [
             'id' => (string) $document->id,
@@ -250,6 +253,7 @@ class ApiPresenter
             'issuingCountry' => $document->issuing_country,
             'status' => $status['status'],
             'daysRemaining' => $status['daysRemaining'],
+            'alertLeadDays' => $status['alertLeadDays'],
             'notes' => $document->notes,
             'fileUrl' => $this->fileUrl($document->current_file_id),
             'fileName' => $file?->original_name,
@@ -294,6 +298,9 @@ class ApiPresenter
             'id' => (string) $vehicle->id,
             'companyId' => (string) $vehicle->company_id,
             'internalVehicleId' => $vehicle->internal_vehicle_id,
+            'vehicleName' => $vehicle->vehicle_name
+                ?: trim(implode(' ', array_filter([$vehicle->make, $vehicle->model])))
+                ?: $vehicle->vehicle_number,
             'vehicleNumber' => $vehicle->vehicle_number,
             'plateNumber' => $vehicle->plate_number,
             'make' => $vehicle->make ?? '',
@@ -476,25 +483,38 @@ class ApiPresenter
             : (string) $date;
     }
 
-    private function expiryStatus(mixed $expiryDate): array
+    /**
+     * Resolve the expiry state of a document.
+     *
+     * The yellow "expiring soon" window is driven by the document type's own
+     * alert lead time (QID 15 days, Passport 90 days, Istimara 30 days, and
+     * 30 days for everything else) instead of one hard-coded threshold.
+     */
+    private function expiryStatus(mixed $expiryDate, ?int $alertLeadDays = null): array
     {
         if (!$expiryDate) {
-            return ['status' => 'no_expiry', 'daysRemaining' => null];
+            return ['status' => 'no_expiry', 'daysRemaining' => null, 'alertLeadDays' => $alertLeadDays];
         }
 
+        $leadDays = $alertLeadDays !== null && $alertLeadDays > 0 ? $alertLeadDays : 30;
         $expiry = CarbonImmutable::parse($expiryDate, 'Asia/Qatar')->startOfDay();
         $today = CarbonImmutable::now('Asia/Qatar')->startOfDay();
-        $days = $today->diffInDays($expiry, false);
+        $days = (int) $today->diffInDays($expiry, false);
+
+        // "critical" stays reserved for the final stretch: a third of the lead
+        // window, clamped to a sensible 3–10 day band.
+        $criticalDays = max(3, min(10, (int) ceil($leadDays / 3)));
 
         return [
             'status' => match (true) {
                 $days < 0 => 'expired',
                 $days === 0 => 'expires_today',
-                $days <= 10 => 'critical',
-                $days <= 30 => 'warning',
+                $days <= $criticalDays => 'critical',
+                $days <= $leadDays => 'warning',
                 default => 'valid',
             },
             'daysRemaining' => $days,
+            'alertLeadDays' => $leadDays,
         ];
     }
 }

@@ -1,0 +1,3 @@
+# Vite's local dev cache. node_modules itself is intentionally committed in
+# this deployment package, but the cache must never be.
+node_modules/.vite/
