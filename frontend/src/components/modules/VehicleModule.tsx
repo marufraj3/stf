@@ -7,6 +7,7 @@ import {
 import { db } from '../../services/db';
 import { Vehicle, VehicleStatus, DocumentRecord } from '../../types';
 import { StatusBadge } from '../common/StatusBadge';
+import { VehicleDocumentModal } from '../common/VehicleDocumentModal';
 
 interface VehicleModuleProps {
   onOpenRenewModal: (doc: DocumentRecord) => void;
@@ -24,6 +25,9 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
   const [editingVehicle, setEditingVehicle] = useState<Partial<Vehicle> | null>(null);
   const [driverSearch, setDriverSearch] = useState('');
   const [debouncedDriverSearch, setDebouncedDriverSearch] = useState('');
+
+  // Istimara upload straight from the fleet card
+  const [istimaraVehicle, setIstimaraVehicle] = useState<Vehicle | null>(null);
 
   const companies = db.getCompanies();
 
@@ -75,6 +79,7 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
     const companyId = selected === 'all' ? companies[0]?.id || '' : selected;
     setEditingVehicle({
       internalVehicleId: '',
+      vehicleName: '',
       vehicleNumber: '',
       plateNumber: '',
       companyId,
@@ -212,7 +217,10 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="font-mono text-[10px] text-slate-400 font-bold uppercase">{v.internalVehicleId} • {company?.name}</span>
-                    <h3 className="font-bold text-slate-900 text-sm mt-0.5">{v.make} {v.model} ({v.year})</h3>
+                    <h3 className="font-bold text-slate-900 text-sm mt-0.5">
+                      {v.vehicleName || `${v.make} ${v.model}`.trim() || v.vehicleNumber}
+                      {v.year ? ` (${v.year})` : ''}
+                    </h3>
                   </div>
                   <StatusBadge type="vehicle" status={v.status} />
                 </div>
@@ -226,9 +234,20 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
 
                 {/* Attached Vehicle Estimara / Insurance Docs */}
                 <div className="mt-3 space-y-1.5">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vehicle Documents</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vehicle Documents</div>
+                    {v.status !== 'archived' && db.hasPermission('documents.create') && (
+                      <button
+                        onClick={() => setIstimaraVehicle(v)}
+                        className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-slate-950 hover:bg-amber-600"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Istimara
+                      </button>
+                    )}
+                  </div>
                   {vehicleDocs.length === 0 ? (
-                    <span className="text-[11px] text-slate-400 italic">No Estimara/Insurance uploaded yet.</span>
+                    <span className="text-[11px] text-slate-400 italic">No Istimara/Insurance uploaded yet.</span>
                   ) : (
                     vehicleDocs.map(doc => (
                       <div key={doc.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-slate-50 border border-slate-200/60">
@@ -343,6 +362,19 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
                   <input required value={editingVehicle.vehicleNumber || ''} onChange={event => setEditingVehicle({ ...editingVehicle, vehicleNumber: event.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-mono" />
                 </label>
               </div>
+
+              <label className="block">
+                <span className="font-semibold text-slate-700 block mb-1">Vehicle Name</span>
+                <input
+                  value={editingVehicle.vehicleName || ''}
+                  onChange={event => setEditingVehicle({ ...editingVehicle, vehicleName: event.target.value })}
+                  placeholder="Toyota HiAce Staff Bus"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                />
+                <span className="mt-1 block text-[11px] text-slate-400">
+                  Shown in the Istimara module. Leave blank to use Make + Model.
+                </span>
+              </label>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -516,6 +548,17 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
           </div>
         </div>
       )}
+
+      <VehicleDocumentModal
+        isOpen={Boolean(istimaraVehicle)}
+        vehicle={istimaraVehicle}
+        documentTypeCode="istimara"
+        onClose={() => setIstimaraVehicle(null)}
+        onSaved={() => {
+          void vehicleQuery.refetch();
+          onRefresh();
+        }}
+      />
     </div>
   );
 };

@@ -77,8 +77,8 @@ class ErpResourceService
             'update' => 'vehicles.manage',
             'archive' => 'vehicles.archive',
             'restore' => 'vehicles.restore',
-            'search' => ['internal_vehicle_id', 'vehicle_number', 'plate_number', 'make', 'model'],
-            'sort' => ['vehicle_number', 'plate_number', 'make', 'status', 'created_at'],
+            'search' => ['internal_vehicle_id', 'vehicle_name', 'vehicle_number', 'plate_number', 'make', 'model'],
+            'sort' => ['vehicle_name', 'vehicle_number', 'plate_number', 'make', 'status', 'created_at'],
             'presenter' => 'vehicle',
         ],
         'document-types' => [
@@ -431,13 +431,6 @@ class ErpResourceService
             'email' => ['nullable', 'email', 'max:255'],
         ])->validate();
 
-        $logo = $this->files->storeDataUrl(
-            $data['logoUrl'] ?? null,
-            $company->id ?: null,
-            $user,
-            $data['logoFileName'] ?? 'company-logo',
-            ['image/jpeg', 'image/png'],
-        );
         $company->fill([
             ...$validated,
             'cr_number' => $data['crNumber'] ?? null,
@@ -450,10 +443,23 @@ class ErpResourceService
             'country' => $data['country'] ?? 'Qatar',
             'is_active' => $data['active'] ?? true,
             'reminder_days' => $data['reminderDays'] ?? [30, 15, 10, 7, 3, 1, 0],
-            'logo_path' => $logo?->id ?? $company->logo_path,
         ])->save();
 
-        return $company;
+        // The logo is stored after the company exists so a brand new record
+        // still gets a company-scoped file instead of a global one.
+        if (!empty($data['removeLogo'])) {
+            $company->forceFill(['logo_path' => null])->save();
+        } elseif ($logo = $this->files->storeDataUrl(
+            $data['logoUrl'] ?? null,
+            (int) $company->id,
+            $user,
+            $data['logoFileName'] ?? 'company-logo',
+            ['image/jpeg', 'image/png'],
+        )) {
+            $company->forceFill(['logo_path' => $logo->id])->save();
+        }
+
+        return $company->refresh();
     }
 
     private function saveDepartment(?Model $model, array $data, User $user): Department
@@ -620,6 +626,9 @@ class ErpResourceService
         $vehicle->fill([
             'company_id' => $validated['companyId'],
             'internal_vehicle_id' => $validated['internalVehicleId'],
+            'vehicle_name' => trim((string) ($data['vehicleName'] ?? ''))
+                ?: trim(implode(' ', array_filter([$data['make'] ?? null, $data['model'] ?? null])))
+                ?: $validated['vehicleNumber'],
             'vehicle_number' => $validated['vehicleNumber'],
             'plate_number' => $validated['plateNumber'],
             'make' => $data['make'] ?? null,
@@ -654,6 +663,7 @@ class ErpResourceService
             'ownerType' => ['required', Rule::in(['employee', 'vehicle', 'company'])],
             'customReminderDays' => ['nullable', 'array'],
             'customReminderDays.*' => ['integer', 'min:0', 'max:3650'],
+            'alertLeadDays' => ['nullable', 'integer', 'min:1', 'max:3650'],
         ])->validate();
         $type->fill([
             'name' => $validated['name'],
@@ -665,6 +675,7 @@ class ErpResourceService
             'file_required' => $data['fileRequired'] ?? false,
             'reminder_enabled' => $data['reminderEnabled'] ?? true,
             'custom_reminder_days' => $validated['customReminderDays'] ?? [30, 15, 10, 7, 3, 1, 0],
+            'alert_lead_days' => $validated['alertLeadDays'] ?? 30,
             'default_validity_months' => $data['defaultValidityMonths'] ?? null,
             'is_active' => $data['active'] ?? true,
         ])->save();

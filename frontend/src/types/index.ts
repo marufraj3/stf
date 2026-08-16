@@ -53,6 +53,9 @@ export interface Company {
   city: string;
   country: string;
   logoUrl?: string;
+  /** Data URL set only while uploading a new logo from the Settings form. */
+  logoFileName?: string;
+  removeLogo?: boolean;
   active: boolean;
   createdAt: string;
 }
@@ -117,9 +120,12 @@ export interface Employee {
   passportExpiryDate?: string;
   licenseNumber?: string;
   licenseExpiryDate?: string;
+  labourContractNumber?: string;
+  labourContractExpiryDate?: string;
   passportFileUrl?: string;
   licenseFileUrl?: string;
   qidFileUrl?: string;
+  labourContractFileUrl?: string;
   homeCountryAddress?: string;
   nocStatus?: string;
   tradeSpecialization?: string;
@@ -160,6 +166,8 @@ export interface DocumentType {
   fileRequired: boolean;
   reminderEnabled: boolean;
   customReminderDays: number[]; // e.g. [30, 15, 10, 7, 3, 1, 0]
+  /** Days before expiry that a yellow warning is raised (QID 15, Passport 90, Istimara 30). */
+  alertLeadDays: number;
   defaultValidityMonths?: number;
   active: boolean;
 }
@@ -209,6 +217,8 @@ export interface DocumentRecord {
   updatedAt: string;
   archivedAt?: string;
   daysRemaining?: number;
+  /** Lead time used to decide the warning window for this document's type. */
+  alertLeadDays?: number;
 }
 
 export type VehicleStatus = 'active' | 'under_maintenance' | 'inactive' | 'sold' | 'cancelled' | 'archived';
@@ -228,6 +238,8 @@ export interface Vehicle {
   id: string;
   companyId: string;
   internalVehicleId: string;
+  /** Human friendly name shown in the Istimara module. */
+  vehicleName?: string;
   vehicleNumber: string;
   plateNumber: string;
   make: string;
@@ -347,6 +359,13 @@ export type NotificationProviderSettings = ProviderConfig & {
 };
 
 export interface ExpiryCounts {
+  /** Per-type alert counts driven by each document type's own lead time. */
+  expiringQid: number;
+  expiredQid: number;
+  expiringPassport: number;
+  expiredPassport: number;
+  expiringIstimara: number;
+  expiredIstimara: number;
   totalEmployees: number;
   activeEmployees: number;
   cancelledEmployees: number;

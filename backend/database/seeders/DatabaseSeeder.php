@@ -83,10 +83,11 @@ class DatabaseSeeder extends Seeder
         }
 
         foreach ([
-            ['code' => 'TL', 'name' => 'Trust Limousine'],
-            ['code' => 'TC', 'name' => 'Trust Contracting'],
-            ['code' => 'TD', 'name' => 'Trust Delivery'],
-            ['code' => 'FS', 'name' => 'Fly Safe'],
+            ['code' => 'SAS', 'name' => 'SEAF AL SAFER LIMOUSINE'],
+            ['code' => 'TFC', 'name' => 'TRUST AND FIRST TRADING AND CONTRACTING'],
+            ['code' => 'TFD', 'name' => 'TRUST AND FIRST DELIVERY SERVICES'],
+            ['code' => 'FST', 'name' => 'FLY SAFE TRAVELS AND TOURS'],
+            ['code' => 'TFG', 'name' => 'TRUST AND FIRST TRADING (GARAGE)'],
         ] as $company) {
             Company::firstOrCreate(['code' => $company['code']], [
                 ...$company,
@@ -97,26 +98,27 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
+        // [name, code, ownerType, numberRequired, expiryRequired, alertLeadDays]
         $documentTypes = [
-            ['QID', 'qid', 'employee', true, true],
-            ['Passport', 'passport', 'employee', true, true],
-            ['Visa', 'visa', 'employee', true, true],
-            ['Driving License', 'driving-license', 'employee', true, true],
-            ['Health Card', 'health-card', 'employee', true, true],
-            ['Employment Contract', 'employment-contract', 'employee', false, false],
-            ['Istimara', 'istimara', 'vehicle', true, true],
-            ['Vehicle Insurance', 'vehicle-insurance', 'vehicle', true, true],
-            ['Vehicle Inspection', 'vehicle-inspection', 'vehicle', true, true],
-            ['Limousine Permit', 'limousine-permit', 'vehicle', true, true],
-            ['Trade License', 'trade-license', 'company', true, true],
-            ['Commercial Registration', 'commercial-registration', 'company', true, true],
-            ['Computer Card', 'computer-card', 'company', true, true],
-            ['Municipality License', 'municipality-license', 'company', true, true],
-            ['Labour Contract', 'labour-contract', 'company', true, true],
-            ['Establishment Card', 'establishment-card', 'company', true, true],
+            ['QID', 'qid', 'employee', true, true, 15],
+            ['Passport', 'passport', 'employee', true, true, 90],
+            ['Visa', 'visa', 'employee', true, true, 30],
+            ['Driving License', 'driving-license', 'employee', true, true, 30],
+            ['Health Card', 'health-card', 'employee', true, true, 30],
+            ['Employment Contract', 'employment-contract', 'employee', false, false, 30],
+            ['Labour Contract', 'labour-contract', 'employee', false, false, 30],
+            ['Istimara', 'istimara', 'vehicle', true, true, 30],
+            ['Vehicle Insurance', 'vehicle-insurance', 'vehicle', true, true, 30],
+            ['Vehicle Inspection', 'vehicle-inspection', 'vehicle', true, true, 30],
+            ['Limousine Permit', 'limousine-permit', 'vehicle', true, true, 30],
+            ['Trade License', 'trade-license', 'company', true, true, 30],
+            ['Commercial Registration', 'commercial-registration', 'company', true, true, 30],
+            ['Computer Card', 'computer-card', 'company', true, true, 30],
+            ['Municipality License', 'municipality-license', 'company', true, true, 30],
+            ['Establishment Card', 'establishment-card', 'company', true, true, 30],
         ];
 
-        foreach ($documentTypes as [$name, $code, $ownerType, $numberRequired, $expiryRequired]) {
+        foreach ($documentTypes as [$name, $code, $ownerType, $numberRequired, $expiryRequired, $alertLeadDays]) {
             DocumentType::firstOrCreate(['code' => $code], [
                 'name' => $name,
                 'owner_type' => $ownerType,
@@ -126,6 +128,7 @@ class DatabaseSeeder extends Seeder
                 'file_required' => false,
                 'reminder_enabled' => $expiryRequired,
                 'custom_reminder_days' => [30, 15, 10, 7, 3, 1, 0],
+                'alert_lead_days' => $alertLeadDays,
                 'is_active' => true,
             ]);
         }
@@ -151,13 +154,13 @@ class DatabaseSeeder extends Seeder
                 'channel' => 'email',
                 'name' => 'Default Expiry Email',
                 'email_subject' => '{DocumentType} expiry reminder',
-                'message_body' => 'Dear {EmployeeName}, your {DocumentType} will expire on {ExpiryDate}. Please renew it before expiry. Trust Group HR Department',
+                'message_body' => 'Dear {EmployeeName}, your {DocumentType} will expire on {ExpiryDate}. Please renew it before expiry. STF Group HR Department',
             ],
             [
                 'channel' => 'sms',
                 'name' => 'Default Expiry SMS',
                 'email_subject' => null,
-                'message_body' => 'Dear {EmployeeName}, your {DocumentType} will expire on {ExpiryDate}. Please renew it. Trust Group HR',
+                'message_body' => 'Dear {EmployeeName}, your {DocumentType} will expire on {ExpiryDate}. Please renew it. STF Group HR',
             ],
         ] as $template) {
             NotificationTemplate::firstOrCreate(
@@ -174,7 +177,7 @@ class DatabaseSeeder extends Seeder
         $admin = User::updateOrCreate(
             ['email' => 'admin@trustgroup.local'],
             [
-                'name' => 'Trust Group Administrator',
+                'name' => 'STF Group Administrator',
                 'password' => Hash::make('password'),
                 'status' => 'active',
                 'all_companies' => true,

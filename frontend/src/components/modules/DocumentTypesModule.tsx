@@ -20,6 +20,7 @@ export const DocumentTypesModule: React.FC<DocumentTypesModuleProps> = ({ onRefr
     fileRequired: true,
     reminderEnabled: true,
     customReminderDays: [30, 15, 10, 7, 3, 1, 0],
+    alertLeadDays: 30,
     defaultValidityMonths: 12,
   });
 
@@ -34,6 +35,7 @@ export const DocumentTypesModule: React.FC<DocumentTypesModuleProps> = ({ onRefr
       fileRequired: true,
       reminderEnabled: true,
       customReminderDays: [30, 15, 10, 7, 3, 1, 0],
+      alertLeadDays: 30,
       defaultValidityMonths: 12,
     });
     setIsOpen(true);
@@ -114,6 +116,12 @@ export const DocumentTypesModule: React.FC<DocumentTypesModuleProps> = ({ onRefr
                     {dt.customReminderDays.join(', ')} days
                   </span>
                 </div>
+                <div className="flex justify-between">
+                  <span>Alert Lead Time:</span>
+                  <span className="font-mono text-[11px] font-bold text-amber-700">
+                    {dt.alertLeadDays ?? 30} days
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -189,6 +197,26 @@ export const DocumentTypesModule: React.FC<DocumentTypesModuleProps> = ({ onRefr
                   }}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono"
                 />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Dashboard Alert Lead Time (Days before expiry)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={3650}
+                  placeholder="30"
+                  value={editingType.alertLeadDays ?? 30}
+                  onChange={(e) =>
+                    setEditingType({ ...editingType, alertLeadDays: Number(e.target.value) || 30 })
+                  }
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono"
+                />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  When the yellow warning appears on the dashboard. QID uses 15, Passport 90, Istimara 30.
+                </p>
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">

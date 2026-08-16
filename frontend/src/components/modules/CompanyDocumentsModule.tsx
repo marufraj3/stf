@@ -4,6 +4,7 @@ import { Building, RefreshCw, FileText, Download, ShieldCheck, Check } from 'luc
 import { db } from '../../services/db';
 import { DocumentRecord } from '../../types';
 import { StatusBadge } from '../common/StatusBadge';
+import { CompanyLogo } from '../common/CompanyLogo';
 
 interface CompanyDocumentsModuleProps {
   onOpenRenewModal: (doc: DocumentRecord) => void;
@@ -53,11 +54,14 @@ export const CompanyDocumentsModule: React.FC<CompanyDocumentsModuleProps> = ({
           return (
             <div key={company.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
-                <div>
+                <div className="flex items-center gap-3">
+                  <CompanyLogo code={company.code} name={company.name} logoUrl={company.logoUrl} sizeClass="w-11 h-11" />
+                  <div>
                   <h2 className="font-bold text-slate-900 text-base">{company.name}</h2>
                   <p className="text-xs text-slate-500 font-mono">
                     CR #: {company.crNumber || 'N/A'} • Establishment Card: {company.computerCardNumber || 'N/A'}
                   </p>
+                  </div>
                 </div>
                 <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 self-start sm:self-auto">
                   Active Entity

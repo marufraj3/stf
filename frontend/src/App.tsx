@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import { Sidebar, NavTab } from './components/layout/Sidebar';
 import { DashboardModule } from './components/modules/DashboardModule';
+import { LimousineModule } from './components/modules/LimousineModule';
 import { EmployeeModule } from './components/modules/EmployeeModule';
 import { DynamicDocumentsModule } from './components/modules/DynamicDocumentsModule';
 import { DocumentTypesModule } from './components/modules/DocumentTypesModule';
@@ -29,6 +30,7 @@ import { DocumentRecord } from './types';
 
 const TAB_PERMISSIONS: Record<NavTab, string> = {
   dashboard: 'dashboard.view',
+  limousine: 'employees.view',
   employees: 'employees.view',
   documents: 'documents.view',
   'doc-types': 'document_types.view',
@@ -44,6 +46,7 @@ const TAB_PERMISSIONS: Record<NavTab, string> = {
 
 const TAB_PATHS: Record<NavTab, string> = {
   dashboard: '/dashboard',
+  limousine: '/limousine',
   employees: '/employees',
   documents: '/documents',
   'doc-types': '/document-types',
@@ -258,6 +261,13 @@ export function App() {
               {currentTab === 'dashboard' && (
                 <DashboardModule
                   onNavigate={handleNavigate}
+                  onOpenRenewModal={handleOpenRenewModal}
+                  onRefresh={refreshData}
+                />
+              )}
+
+              {currentTab === 'limousine' && (
+                <LimousineModule
                   onOpenRenewModal={handleOpenRenewModal}
                   onRefresh={refreshData}
                 />

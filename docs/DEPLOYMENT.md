@@ -24,6 +24,21 @@ Use exactly one database installation path.
 Import `database/TRUST-GROUP-ERP-COMPLETE-FRESH-INSTALL.sql` into a new empty
 database. Do not run the seeder after this import.
 
+### A2. Upgrading an existing 4-company database
+
+If the database was created from an earlier release, do **not** re-import the
+fresh-install file — it would wipe live records. Back up the database, then
+import once:
+
+```text
+database/UPGRADE-STF-GROUP-5-COMPANIES.sql
+```
+
+It renames the four existing companies, adds Trust And First Trading (Garage),
+adds `document_types.alert_lead_days` (QID 15, Passport 90, Istimara 30) and
+`vehicles.vehicle_name`, and moves Labour Contract to a staff document. The
+script is guarded, so running it twice is safe.
+
 ### B. Artisan migration
 
 ```bash

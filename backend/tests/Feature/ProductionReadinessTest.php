@@ -30,7 +30,7 @@ class ProductionReadinessTest extends TestCase
 
     public function test_fresh_install_contains_configuration_but_no_demo_business_records(): void
     {
-        $this->assertDatabaseCount('companies', 4);
+        $this->assertDatabaseCount('companies', 5);
         $this->assertDatabaseCount('roles', 5);
         $this->assertDatabaseCount('document_types', 16);
         $this->assertDatabaseCount('users', 1);
@@ -123,6 +123,82 @@ class ProductionReadinessTest extends TestCase
             'action' => 'IMPERSONATE',
             'record_id' => (string) $target->id,
         ]);
+    }
+
+    public function test_expiry_alerts_use_per_document_type_lead_days(): void
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-08-17 09:00:00', 'Asia/Qatar'));
+        $admin = User::where('email', 'admin@trustgroup.local')->firstOrFail();
+        Sanctum::actingAs($admin, ['erp']);
+        $company = Company::where('code', 'SAS')->firstOrFail();
+        $employee = Employee::create([
+            'company_id' => $company->id,
+            'employee_code' => 'ALERT-001',
+            'full_name' => 'Alert Employee',
+            'status' => 'active',
+        ]);
+
+        // 60 days out: inside the Passport 90-day window, outside the QID 15-day one.
+        $sixtyDays = CarbonImmutable::parse('2026-08-17', 'Asia/Qatar')->addDays(60)->toDateString();
+        foreach (['qid' => $sixtyDays, 'passport' => $sixtyDays] as $code => $expiry) {
+            Document::create([
+                'company_id' => $company->id,
+                'owner_type' => 'employee',
+                'owner_id' => $employee->id,
+                'document_type_id' => DocumentType::where('code', $code)->value('id'),
+                'document_number' => strtoupper($code).'-ALERT-001',
+                'expiry_date' => $expiry,
+                'status' => 'active',
+                'reminder_enabled' => true,
+            ]);
+        }
+
+        $response = $this->getJson('/api/dashboard?company_id='.$company->id)->assertOk();
+
+        // Passport warns 90 days ahead, so it is counted; QID only warns at 15 days.
+        $response->assertJsonPath('data.stats.expiringPassport', 1);
+        $response->assertJsonPath('data.stats.expiringQid', 0);
+        $response->assertJsonPath('data.documentTypeAlerts.qid.leadDays', 15);
+        $response->assertJsonPath('data.documentTypeAlerts.passport.leadDays', 90);
+        $response->assertJsonPath('data.documentTypeAlerts.istimara.leadDays', 30);
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_company_logo_upload_is_stored_against_the_company(): void
+    {
+        Storage::fake('local');
+        $admin = User::where('email', 'admin@trustgroup.local')->firstOrFail();
+        Sanctum::actingAs($admin, ['erp']);
+
+        // A real 1x1 PNG: the uploader verifies magic bytes, so fixtures must be valid.
+        $png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8'
+            .'z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+        $created = $this->postJson('/api/resources/companies', [
+            'name' => 'Logo Test Company',
+            'code' => 'LOGO',
+            'logoUrl' => 'data:image/png;base64,'.$png,
+            'logoFileName' => 'logo.png',
+        ])->assertCreated();
+
+        $companyId = $created->json('data.id');
+        $this->assertNotNull($created->json('data.logoUrl'), 'The logo URL should be returned.');
+
+        // A brand new company must own its logo file, not the global bucket.
+        $company = Company::findOrFail($companyId);
+        $this->assertNotNull($company->logo_path);
+        $this->assertDatabaseHas('stored_files', [
+            'id' => $company->logo_path,
+            'company_id' => $company->id,
+        ]);
+
+        // Removing the logo clears the reference.
+        $this->putJson('/api/resources/companies/'.$companyId, [
+            'name' => 'Logo Test Company',
+            'code' => 'LOGO',
+            'removeLogo' => true,
+        ])->assertOk()->assertJsonPath('data.logoUrl', null);
     }
 
     public function test_reminders_are_idempotent_and_renewal_preserves_history(): void

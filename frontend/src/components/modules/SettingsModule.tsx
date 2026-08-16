@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Bell, Building, ShieldCheck, Key, Sliders, Plus, Edit, X, Users, ServerCog, RefreshCw, RotateCcw } from 'lucide-react';
 import { db } from '../../services/db';
 import { apiRequest } from '../../services/api';
+import { CompanyLogo } from '../common/CompanyLogo';
 import {
   Company,
   CustomReminderRecipient,
@@ -68,6 +69,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ onRefresh }) => 
   // Editing Company Modal
   const [editingCompany, setEditingCompany] = useState<Partial<Company>>({});
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [companyError, setCompanyError] = useState<string>('');
 
   // Editing Dept Modal
   const [newDeptName, setNewDeptName] = useState('');
@@ -108,10 +110,50 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ onRefresh }) => 
   const handleSaveCompany = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCompany.name) return;
-    await db.saveCompany(editingCompany);
-    setCompanies(db.getCompanies());
-    setIsCompanyModalOpen(false);
-    onRefresh();
+    setCompanyError('');
+    try {
+      await db.saveCompany(editingCompany);
+      setCompanies(db.getCompanies());
+      setIsCompanyModalOpen(false);
+      onRefresh();
+    } catch (error) {
+      setCompanyError(error instanceof Error ? error.message : 'Unable to save the company.');
+    }
+  };
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      setCompanyError('Logo must be a PNG or JPG image.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setCompanyError('Logo may not be larger than 2 MB.');
+      event.target.value = '';
+      return;
+    }
+    setCompanyError('');
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEditingCompany(current => ({
+        ...current,
+        logoUrl: String(reader.result || ''),
+        logoFileName: file.name,
+        removeLogo: false,
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoRemove = () => {
+    setEditingCompany(current => ({
+      ...current,
+      logoUrl: '',
+      logoFileName: '',
+      removeLogo: true,
+    }));
   };
 
   const handleAddDept = async (e: React.FormEvent) => {
@@ -322,6 +364,7 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ onRefresh }) => 
             {canManageCompanies && (
               <button
                 onClick={() => {
+                  setCompanyError('');
                   setEditingCompany({ name: '', code: '', crNumber: '', computerCardNumber: '', phone: '+974 ', email: '', address: 'Doha, Qatar' });
                   setIsCompanyModalOpen(true);
                 }}
@@ -336,14 +379,17 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ onRefresh }) => 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {companies.map(c => (
               <div key={c.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="font-mono text-[10px] text-amber-600 font-bold uppercase">{c.code}</span>
-                    <h3 className="font-bold text-slate-900 text-base">{c.name}</h3>
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <CompanyLogo code={c.code} name={c.name} logoUrl={c.logoUrl} sizeClass="w-12 h-12" />
+                    <div className="min-w-0">
+                      <span className="font-mono text-[10px] text-amber-600 font-bold uppercase">{c.code}</span>
+                      <h3 className="font-bold text-slate-900 text-base leading-tight">{c.name}</h3>
+                    </div>
                   </div>
                   {canManageCompanies && (
                     <button
-                      onClick={() => { setEditingCompany({ ...c }); setIsCompanyModalOpen(true); }}
+                      onClick={() => { setCompanyError(''); setEditingCompany({ ...c }); setIsCompanyModalOpen(true); }}
                       className="p-1 text-slate-400 hover:text-slate-700"
                     >
                       <Edit className="w-4 h-4" />
@@ -813,7 +859,52 @@ export const SettingsModule: React.FC<SettingsModuleProps> = ({ onRefresh }) => 
               </button>
             </div>
 
-            <form onSubmit={handleSaveCompany} className="p-5 space-y-3 text-xs">
+            <form onSubmit={handleSaveCompany} className="p-5 space-y-3 text-xs max-h-[75vh] overflow-y-auto">
+              {companyError && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700 font-semibold">
+                  {companyError}
+                </div>
+              )}
+
+              {/* Company logo upload */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <span className="font-semibold text-slate-700 block mb-2">Company Logo</span>
+                <div className="flex items-center gap-3">
+                  <CompanyLogo
+                    code={editingCompany.code || ''}
+                    name={editingCompany.name}
+                    logoUrl={editingCompany.logoUrl}
+                    sizeClass="w-16 h-16"
+                    textClass="text-sm"
+                  />
+                  <div className="flex-1 space-y-1.5">
+                    <input
+                      type="file"
+                      accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                      onChange={handleLogoUpload}
+                      className="w-full border border-slate-300 bg-white rounded-xl p-1 text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                    />
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500">PNG or JPG, max 2 MB.</span>
+                      {editingCompany.logoUrl && (
+                        <button
+                          type="button"
+                          onClick={handleLogoRemove}
+                          className="text-[11px] font-semibold text-rose-600 hover:text-rose-700"
+                        >
+                          Remove logo
+                        </button>
+                      )}
+                    </div>
+                    {!editingCompany.logoUrl && (
+                      <p className="text-[11px] text-slate-400">
+                        No logo uploaded — the company code badge is shown instead.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="font-semibold text-slate-700 block mb-1">Company Name *</label>
                 <input

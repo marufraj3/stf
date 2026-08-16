@@ -17,7 +17,19 @@ class DocumentType extends Model
             'file_required' => 'boolean',
             'reminder_enabled' => 'boolean',
             'custom_reminder_days' => 'array',
+            'alert_lead_days' => 'integer',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Lead time, in days, before expiry that dashboards should raise a yellow
+     * warning for this document type (QID 15, Passport 90, Istimara 30…).
+     */
+    public function alertLeadDays(): int
+    {
+        $days = (int) ($this->alert_lead_days ?? 0);
+
+        return $days > 0 ? $days : 30;
     }
 }

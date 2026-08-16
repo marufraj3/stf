@@ -59,6 +59,8 @@ export const AddEditEmployeeModal: React.FC<AddEditEmployeeModalProps> = ({
     status: 'active',
     qidNumber: '',
     qidExpiryDate: '',
+    labourContractNumber: '',
+    labourContractExpiryDate: '',
     passportNumber: '',
     passportExpiryDate: '',
     licenseNumber: '',
@@ -92,7 +94,7 @@ export const AddEditEmployeeModal: React.FC<AddEditEmployeeModalProps> = ({
 // File Upload Helpers
 const handleFileUpload = (
   e: React.ChangeEvent<HTMLInputElement>,
-  type: 'profile' | 'passport' | 'license' | 'qid'
+  type: 'profile' | 'passport' | 'license' | 'qid' | 'labour'
 ) => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -194,6 +196,25 @@ const handleFileUpload = (
           docItem,
         ],
       }));
+    } else if (type === 'labour') {
+      const docItem = {
+        id: `doc-labour-${Date.now()}`,
+        type: 'Labour Contract',
+        name: file.name,
+        fileUrl: dataUrl,
+        expiryDate: formData.labourContractExpiryDate,
+      };
+
+      setFormData(prev => ({
+        ...prev,
+        labourContractFileUrl: dataUrl,
+        uploadedDocuments: [
+          ...(prev.uploadedDocuments || []).filter(
+            document => document.type !== 'Labour Contract'
+          ),
+          docItem,
+        ],
+      }));
     }
   };
 
@@ -218,8 +239,8 @@ const removeProfilePhoto = () => {
 
 // Delete Passport, License or QID
 const removeIdentityDocument = async (
-  code: 'passport' | 'driving-license' | 'qid',
-  field: 'passportFileUrl' | 'licenseFileUrl' | 'qidFileUrl'
+  code: 'passport' | 'driving-license' | 'qid' | 'labour-contract',
+  field: 'passportFileUrl' | 'licenseFileUrl' | 'qidFileUrl' | 'labourContractFileUrl'
 ) => {
   if (!window.confirm('Are you sure you want to delete this document?')) {
     return;
@@ -230,7 +251,9 @@ const removeIdentityDocument = async (
       ? 'Passport'
       : code === 'driving-license'
         ? 'License'
-        : 'QID';
+        : code === 'labour-contract'
+          ? 'Labour Contract'
+          : 'QID';
 
   try {
     // Previously saved document খুঁজবে
@@ -328,6 +351,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       await saveIdentityDocument('passport', formData.passportNumber, formData.passportExpiryDate, formData.passportFileUrl, uploaded.find(item => item.type === 'Passport')?.name);
       await saveIdentityDocument('driving-license', formData.licenseNumber, formData.licenseExpiryDate, formData.licenseFileUrl, uploaded.find(item => item.type === 'License')?.name);
       await saveIdentityDocument('qid', formData.qidNumber, formData.qidExpiryDate, formData.qidFileUrl, uploaded.find(item => item.type === 'QID')?.name);
+      await saveIdentityDocument('labour-contract', formData.labourContractNumber, formData.labourContractExpiryDate, formData.labourContractFileUrl, uploaded.find(item => item.type === 'Labour Contract')?.name);
 
       onSaveSuccess();
       onClose();
@@ -747,6 +771,69 @@ const handleSubmit = async (e: React.FormEvent) => {
     className="w-full border border-slate-300 rounded-xl p-1 text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
   />
 </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Labour Contract Number</label>
+                <input
+                  type="text"
+                  value={formData.labourContractNumber || ''}
+                  onChange={(e) => setFormData({ ...formData, labourContractNumber: e.target.value })}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-purple-600 font-mono"
+                  placeholder="Optional"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Labour Contract Expiry</label>
+                <input
+                  type="date"
+                  value={formData.labourContractExpiryDate || ''}
+                  onChange={(e) => setFormData({ ...formData, labourContractExpiryDate: e.target.value })}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-purple-600"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Labour Contract PDF / Scan
+                </label>
+
+                {formData.labourContractFileUrl && (
+                  <div className="mb-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2">
+                    <p className="truncate text-xs font-semibold text-emerald-700">
+                      ✓ Current Labour Contract available
+                    </p>
+
+                    <div className="mt-1 flex gap-3">
+                      <a
+                        href={formData.labourContractFileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        View
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() => void removeIdentityDocument('labour-contract', 'labourContractFileUrl')}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-red-600"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => handleFileUpload(e, 'labour')}
+                  className="w-full border border-slate-300 rounded-xl p-1 text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                />
+              </div>
             </div>
           </div>
 

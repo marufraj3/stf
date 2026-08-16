@@ -8,6 +8,7 @@ import { reminderEngine } from '../../services/reminderEngine';
 import { logout } from '../../services/auth';
 import { Company, User } from '../../types';
 import { SecureImage } from '../common/SecureFile';
+import { CompanyLogo } from '../common/CompanyLogo';
 
 interface HeaderProps {
   onOpenSearch: () => void;
@@ -80,16 +81,34 @@ export const Header: React.FC<HeaderProps> = ({
     ? companies 
     : companies.filter(c => currentUser.companyAccess.includes(c.id));
 
+  // Branding follows the active workspace; "all companies" keeps the group mark.
+  const activeCompany = selectedCompanyId !== 'all'
+    ? companies.find(company => company.id === selectedCompanyId)
+    : undefined;
+
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs h-16 flex items-center justify-between px-4 sm:px-6">
       {/* Left: Branding & Multi-Company Switcher */}
       <div className="flex items-center gap-4">
         <div className="hidden md:flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-slate-900 text-amber-400 font-bold flex items-center justify-center text-lg shadow-sm">
-            QA
-          </div>
-          <div className="leading-none">
-            <span className="block font-bold text-slate-900 text-sm tracking-tight">Qatar HR System</span>
+          {activeCompany ? (
+            <CompanyLogo
+              code={activeCompany.code}
+              name={activeCompany.name}
+              logoUrl={activeCompany.logoUrl}
+              sizeClass="w-9 h-9"
+              textClass="text-[10px]"
+              rounded="rounded-lg"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-lg bg-slate-900 text-amber-400 font-bold flex items-center justify-center text-sm shadow-sm">
+              STF
+            </div>
+          )}
+          <div className="leading-none max-w-[220px]">
+            <span className="block font-bold text-slate-900 text-sm tracking-tight truncate">
+              {activeCompany ? activeCompany.name : 'STF Group ERP'}
+            </span>
             <span className="block text-[10px] font-semibold text-amber-600 uppercase tracking-widest mt-0.5">
               Multi-Company Compliance
             </span>

@@ -14,6 +14,13 @@ export default defineConfig(() => {
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // Allow proxied preview/staging hostnames to reach the dev server.
+      allowedHosts: true,
+      // In local development the SPA and Laravel run on different ports; the
+      // browser always calls a relative /api path and Vite forwards it.
+      proxy: process.env.VITE_DEV_API_PROXY
+        ? { '/api': { target: process.env.VITE_DEV_API_PROXY, changeOrigin: true } }
+        : undefined,
     },
     build: {
       rollupOptions: {
