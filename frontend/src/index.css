@@ -1,7 +1,259 @@
 @import "tailwindcss";
+
 @page {
   size: A4 portrait;
-  margin: 10mm;
+  margin: 0;
+}
+
+.official-form-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  font-family: "Times New Roman", Times, serif;
+  color: #282526;
+}
+
+.official-form-page {
+  box-sizing: border-box;
+  position: relative;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 6mm;
+  border: 2px solid #2c292a;
+  background: #fff;
+  box-shadow: 0 4px 16px rgb(15 23 42 / 18%);
+  font-size: 10.5pt;
+  font-weight: 600;
+}
+
+.official-form-header {
+  height: 47mm;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 2mm 11mm 2mm 25mm;
+}
+
+.official-company-logo {
+  width: 105mm;
+  height: 42mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.official-company-logo > div {
+  background: #fff !important;
+  color: #1c3f94;
+  box-shadow: none !important;
+}
+
+.official-company-logo img {
+  object-fit: contain;
+  padding: 0 !important;
+}
+
+.official-employee-photo {
+  width: 35mm;
+  height: 45mm;
+  border: 1px solid #2c292a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #c4c4c4;
+  font-size: 11pt;
+  font-weight: 700;
+  text-align: center;
+}
+
+.official-employee-photo span {
+  transform: rotate(-43deg);
+  white-space: nowrap;
+}
+
+.official-company-name {
+  min-height: 13mm;
+  border-bottom: 3px double #2c292a;
+  display: flex;
+  align-items: center;
+  gap: 3mm;
+  padding: 0 3mm 2mm;
+  font-size: 16pt;
+}
+
+.official-company-name span {
+  flex: 1;
+  color: #ed1c24;
+  text-align: center;
+  border-bottom: 2px dotted #2c292a;
+  font-size: 17pt;
+  line-height: 1.1;
+}
+
+.official-form-section {
+  margin-top: 1mm;
+}
+
+.employee-section-title {
+  margin: 0;
+  padding: 0.7mm 0;
+  color: #ed1c24;
+  text-align: center;
+  font-size: 11pt;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.official-form-section table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 10pt;
+}
+
+.official-form-section td {
+  width: 50%;
+  height: 7.5mm;
+  border: 1px solid #2c292a;
+  padding: 1mm 2mm;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.official-form-section td strong {
+  font-weight: 700;
+}
+
+.official-form-section td span {
+  font-family: Arial, sans-serif;
+  font-size: 8.5pt;
+  font-weight: 500;
+}
+
+.official-terms-section {
+  padding: 1.5mm 1mm 0;
+}
+
+.official-terms-section h2 {
+  margin: 0 0 1mm;
+  color: #7d3495;
+  font-size: 14pt;
+  font-weight: 700;
+}
+
+.official-terms {
+  margin: 0;
+  padding-left: 5.5mm;
+  color: #006b3c;
+  font-size: 9.5pt;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.official-terms li {
+  margin-bottom: 2mm;
+  padding-left: 0.5mm;
+}
+
+.official-form-page-two {
+  padding: 6mm 7mm 18mm;
+}
+
+.official-form-page-two > .official-terms {
+  font-size: 11pt;
+  line-height: 1.55;
+  padding-left: 6mm;
+}
+
+.official-form-page-two > .official-terms li {
+  margin-bottom: 2.3mm;
+}
+
+.official-declaration {
+  margin-top: 10mm;
+  color: #94278f;
+  font-size: 11pt;
+}
+
+.official-declaration h2 {
+  margin: 0 0 1mm;
+  color: #24205f;
+  font-size: 15pt;
+}
+
+.official-declaration p {
+  margin: 0 0 2mm;
+  font-weight: 700;
+}
+
+.official-signature-area {
+  position: relative;
+  height: 100mm;
+  margin: 7mm 3mm 0;
+  color: #24205f;
+  font-size: 13pt;
+  font-weight: 700;
+}
+
+.signature {
+  position: absolute;
+  width: 66mm;
+  border-top: 1px solid #24205f;
+  padding-top: 1.5mm;
+}
+
+.signature-person {
+  top: 18mm;
+  left: 0;
+}
+
+.signature-admin {
+  left: 3mm;
+  bottom: 6mm;
+  text-align: center;
+}
+
+.signature-date {
+  position: absolute;
+  top: 18mm;
+  right: 0;
+}
+
+.company-stamp {
+  position: absolute;
+  right: 8mm;
+  bottom: 22mm;
+  color: #d9d9eb;
+  transform: rotate(-28deg);
+}
+
+.official-company-footer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  min-height: 15mm;
+  border-top: 3px double #2c292a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5mm 4mm;
+  text-align: center;
+  font-size: 9.5pt;
+  line-height: 1.25;
+}
+
+@media (max-width: 860px) {
+  .printable-form-container {
+    overflow-x: auto;
+  }
+
+  .official-form-pages {
+    align-items: flex-start;
+  }
 }
 
 @media print {
@@ -14,7 +266,7 @@
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
-    background: #ffffff !important;
+    background: #fff !important;
   }
 
   body * {
@@ -24,72 +276,49 @@
   .employee-print-overlay,
   .employee-print-modal,
   .printable-form-container,
-  .printable-form-container * {
+  .printable-form-container *,
+  .official-form-pages,
+  .official-form-page {
     visibility: visible !important;
   }
 
-  .employee-print-overlay {
-    position: absolute !important;
-    inset: 0 !important;
-    display: block !important;
-    width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-
-    /* গুরুত্বপূর্ণ */
-    place-items: unset !important;
-    align-items: unset !important;
-    justify-content: unset !important;
-  }
-
-  .employee-print-modal {
+  .employee-print-overlay,
+  .employee-print-modal,
+  .printable-form-container,
+  .official-form-pages {
     position: static !important;
     display: block !important;
-    width: 100% !important;
-    max-width: none !important;
+    width: auto !important;
     height: auto !important;
     min-height: 0 !important;
+    max-width: none !important;
     max-height: none !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
     border: 0 !important;
     border-radius: 0 !important;
+    background: #fff !important;
     box-shadow: none !important;
     transform: none !important;
   }
 
-  .printable-form-container {
-    position: static !important;
+  .official-form-page {
+    position: relative !important;
     display: block !important;
-    width: 100% !important;
-    max-width: none !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
     margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-    transform: none !important;
+    box-shadow: none !important;
+    break-after: page !important;
+    page-break-after: always !important;
+    overflow: hidden !important;
   }
 
-  .printable-form-container > div {
-    position: static !important;
-    display: block !important;
-    width: 100% !important;
-    max-width: none !important;
-    height: auto !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    box-shadow: none !important;
-    transform: none !important;
+  .official-form-page:last-child {
+    break-after: auto !important;
+    page-break-after: auto !important;
   }
 
   .no-print {
@@ -104,7 +333,9 @@
   tr,
   td,
   th,
-  img {
+  img,
+  .employee-form-header,
+  .employee-section-title {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
