@@ -26,8 +26,8 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
   const [driverSearch, setDriverSearch] = useState('');
   const [debouncedDriverSearch, setDebouncedDriverSearch] = useState('');
 
-  // Istimara upload straight from the fleet card
   const [istimaraVehicle, setIstimaraVehicle] = useState<Vehicle | null>(null);
+  const [viewVehicle, setViewVehicle] = useState<Vehicle | null>(null);
 
   const companies = db.getCompanies();
 
@@ -271,6 +271,7 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
 
               <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
                 {v.status !== 'archived' && db.hasPermission('vehicles.manage') && (
+                  <button onClick={()=>setViewVehicle(v)} className="px-3 py-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl">View Details</button>
                   <button
                     onClick={() => handleOpenEdit(v)}
                     className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl"
@@ -549,6 +550,21 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
         </div>
       )}
 
+      {viewVehicle && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={()=>setViewVehicle(null)}>
+          <div onClick={e=>e.stopPropagation()} className="bg-white rounded-2xl w-full max-w-2xl p-6 space-y-3 max-h-[90vh] overflow-y-auto">
+            <h3 className="font-bold text-lg">{viewVehicle.vehicleName} - {viewVehicle.plateNumber}</h3>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div><b>Make:</b> {viewVehicle.make}</div><div><b>Model:</b> {viewVehicle.model}</div>
+              <div><b>Year:</b> {viewVehicle.year}</div><div><b>Color:</b> {viewVehicle.color}</div>
+              <div><b>Chassis:</b> {viewVehicle.chassisNumber}</div><div><b>Engine:</b> {viewVehicle.engineNumber}</div>
+              <div><b>Type:</b> {viewVehicle.vehicleType}</div><div><b>Status:</b> {viewVehicle.status}</div>
+              <div><b>Driver:</b> {viewVehicle.assignedDriverName||"-"}</div><div><b>Secondary:</b> {viewVehicle.secondaryDriverName||"-"}</div>
+            </div>
+            <div className="flex justify-end gap-2"><button onClick={()=>window.print()} className="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm">Print</button><button onClick={()=>setViewVehicle(null)} className="px-4 py-2 border rounded-xl text-sm">Close</button></div>
+          </div>
+        </div>
+      )}
       <VehicleDocumentModal
         isOpen={Boolean(istimaraVehicle)}
         vehicle={istimaraVehicle}
