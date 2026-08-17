@@ -43,7 +43,7 @@ export const DashboardModule: React.FC<{ onNavigate:(tab:NavTab, filter?:string)
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <div className="p-4 border-b flex items-center gap-2 font-bold text-sm"><History className="w-4 h-4"/> Today All History</div>
         {history.length===0 ? <div className="p-6 text-center text-xs text-slate-400">No activity today</div> :
-          <div className="divide-y text-xs">{history.map((h:any)=><div key={h.id} className="px-4 py-2 flex justify-between"><span><b>{h.userName}</b> {h.action} <span className="text-slate-500">({h.module})</span></span><span className="text-slate-400">{new Date(h.timestamp).toLocaleTimeString()}</span></div>)}</div>
+          <div className="divide-y text-xs">{history.map((h:any)=>{const isAdd=h.action.includes('CREATE')||h.action.includes('ADD'); const isDel=h.action.includes('DELETE')||h.action.includes('ARCHIVE'); const badge=isAdd?'bg-emerald-500 text-white':isDel?'bg-rose-500 text-white':'bg-amber-500 text-white'; return <div key={h.id} className="px-4 py-2 flex justify-between items-center"><span className="flex items-center gap-2"><span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${badge}`}>{isAdd?'ADD':isDel?'DELETE':'UPDATE'}</span><b>{h.userName}</b> {h.action} <span className="text-slate-500">({h.module})</span></span><span className="text-slate-400">{new Date(h.timestamp).toLocaleString('en-GB')}</span></div>})}</div>
         }
       </div>
     </div>

@@ -9,7 +9,7 @@ export const BankDocumentsModule: React.FC<{ onRefresh:()=>void }> = ({ onRefres
   const [search,setSearch]=useState(''); const [deb,setDeb]=useState('');
   const [page,setPage]=useState(1); const pageSize=10;
   const [open,setOpen]=useState(false); const [editing,setEditing]=useState<Partial<BankDocument>|null>(null);
-  const [saving,setSaving]=useState(false); const [fileData,setFileData]=useState<string>(''); const [fileName,setFileName]=useState('');
+  const [saving,setSaving]=useState(false); const [deletingId,setDeletingId]=useState<string|null>(null); const [fileData,setFileData]=useState<string>(''); const [fileName,setFileName]=useState('');
   useEffect(()=>{ const t=setTimeout(()=>setDeb(search.trim()),300); return()=>clearTimeout(t)},[search]);
   const q=useQuery({queryKey:['bank-docs',db.getSelectedCompanyId(),deb,page], queryFn:()=>db.listBankDocuments({search:deb,page,pageSize}), placeholderData:p=>p});
   const items=q.data?.items||[]; const totalPages=q.data?.totalPages||1;
@@ -28,9 +28,9 @@ export const BankDocumentsModule: React.FC<{ onRefresh:()=>void }> = ({ onRefres
       setOpen(false); await q.refetch(); onRefresh();
     }catch(err){alert(err instanceof Error?err.message:'Save failed')} finally{setSaving(false)}
   };
-  const handleDelete=async(b:BankDocument)=>{
+  const handleDelete=async(b:BankDocument)=>{ setDeletingId(b.id); try{
     if(!confirm(`Delete bank document for ${b.employeeName}?`)) return;
-    await db.deleteBankDocument(b.id); await q.refetch(); onRefresh();
+    await db.deleteBankDocument(b.id); await q.refetch(); onRefresh(); } finally { setDeletingId(null); }
   };
   const onFile=async(e:React.ChangeEvent<HTMLInputElement>)=>{
     const f=e.target.files?.[0]; if(!f) return; const d=await db.toDataUrl(f); setFileData(d); setFileName(f.name);
@@ -56,7 +56,7 @@ export const BankDocumentsModule: React.FC<{ onRefresh:()=>void }> = ({ onRefres
               <td className="px-4 py-2 font-mono text-xs">{b.ibanNumber||'-'}</td>
               <td className="px-4 py-2 text-xs">{b.bankCardExpiryDate||'-'}</td>
               <td className="px-4 py-2">{b.bankDocumentUrl?<a href={b.bankDocumentUrl} target="_blank" className="text-blue-600 underline text-xs">View</a>:'-'}</td>
-              <td className="px-4 py-2 flex gap-1"><button onClick={()=>openEdit(b)} className="p-1.5 bg-slate-100 rounded-lg"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>handleDelete(b)} className="p-1.5 bg-rose-50 rounded-lg"><Trash2 className="w-3.5 h-3.5 text-rose-600"/></button></td>
+              <td className="px-4 py-2 flex gap-1"><button onClick={()=>openEdit(b)} className="p-1.5 bg-slate-100 rounded-lg"><Edit className="w-3.5 h-3.5"/></button><button onClick={()=>handleDelete(b)} className="p-1.5 bg-rose-50 rounded-lg">{deletingId===b.id?<LoadingSpinner size={12}/>:<Trash2 className="w-3.5 h-3.5 text-rose-600"/>}</button></td>
             </tr>
           ))}{items.length===0 && <tr><td colSpan={7} className="text-center py-8 text-slate-400">No bank documents</td></tr>}</tbody></table>
         </div>

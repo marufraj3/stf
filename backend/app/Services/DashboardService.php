@@ -107,7 +107,7 @@ class DashboardService
                 'totalBankDocuments' => (clone $bankDocs)->count(),
                 'expiredBankCards' => (clone $bankDocs)->whereNotNull('bank_card_expiry_date')->whereDate('bank_card_expiry_date','<',$today->toDateString())->count(),
                 'todayMessages' => (clone $todayMessages)->count(),
-                'todayDistinctMessagedEmployees' => (clone $todayMessages)->distinct('employee_id')->count('employee_id'),
+                'todayDistinctMessagedEmployees' => (clone $todayMessages)->distinct()->count('employee_id'),
             ],
             'urgentDocuments' => $urgent->get()
                 ->map(fn (Document $document) => $this->presenter->document($document))
