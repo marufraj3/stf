@@ -81,6 +81,7 @@ export const EmployeeDetailFormModal: React.FC<EmployeeDetailFormModalProps> = (
     ['QID Number', display(employee.qidNumber), 'Passport Expiry Date', display(employee.passportExpiryDate)],
     ['QID Expiry Date', display(employee.qidExpiryDate), 'Driving License No. (If Any)', display(employee.licenseNumber)],
     ['Passport Number', display(employee.passportNumber), 'Driving License Expiry', display(employee.licenseExpiryDate)],
+    ['Health Card Number', display(employee.healthCardNumber), 'Health Card Expiry', display(employee.healthCardExpiryDate)],
   ];
 
   const emergencyRows: FormRow[] = [

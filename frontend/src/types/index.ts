@@ -122,10 +122,13 @@ export interface Employee {
   licenseExpiryDate?: string;
   labourContractNumber?: string;
   labourContractExpiryDate?: string;
+  healthCardNumber?: string;
+  healthCardExpiryDate?: string;
   passportFileUrl?: string;
   licenseFileUrl?: string;
   qidFileUrl?: string;
   labourContractFileUrl?: string;
+  healthCardFileUrl?: string;
   homeCountryAddress?: string;
   nocStatus?: string;
   tradeSpecialization?: string;
