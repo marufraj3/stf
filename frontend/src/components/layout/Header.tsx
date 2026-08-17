@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Building2, Search, Bell, Clock, RefreshCw, UserCheck, 
-  ChevronDown, ShieldCheck, LogOut, Check 
+  ChevronDown, ShieldCheck, LogOut, Check, RotateCcw 
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { db } from '../../services/db';
 import { reminderEngine } from '../../services/reminderEngine';
 import { logout } from '../../services/auth';
@@ -23,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
   onRefreshData,
   onOpenWorkspaceSelection,
 }) => {
+  const queryClient = useQueryClient();
   const [currentUser, setCurrentUser] = useState<User>(db.getCurrentUser());
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>(db.getSelectedCompanyId());
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -30,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [qatarTime, setQatarTime] = useState<string>('');
   const [userMenuOpen, setUserMenuOpen] = useState<boolean>(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
+  const [isClearingCache, setIsClearingCache] = useState<boolean>(false);
 
   useEffect(() => {
     setCompanies(db.getCompanies());
@@ -73,6 +76,50 @@ export const Header: React.FC<HeaderProps> = ({
       setScanResult('Scan encountered an error.');
     } finally {
       setIsScanning(false);
+    }
+  };
+
+  // Purges every client-side cache layer that can keep a stale compiled SPA or
+  // stale API payloads alive, then hard-reloads. The auth session is preserved
+  // on purpose: clearing the browser cache must not sign the user out.
+  const handleClearCacheAndReload = async () => {
+    setIsClearingCache(true);
+    try {
+      // 1. In-memory API cache (TanStack Query).
+      queryClient.clear();
+
+      // 2. Persistent app preferences. Session auth keys are deliberately kept.
+      try {
+        localStorage.clear();
+      } catch (e) {
+        console.warn('Unable to clear localStorage.', e);
+      }
+
+      // 3. Service workers, which can serve an old index.html indefinitely.
+      if ('serviceWorker' in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map(registration => registration.unregister()));
+        } catch (e) {
+          console.warn('Unable to unregister service workers.', e);
+        }
+      }
+
+      // 4. Cache Storage entries holding old hashed asset bundles.
+      if ('caches' in window) {
+        try {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(key => caches.delete(key)));
+        } catch (e) {
+          console.warn('Unable to clear the Cache Storage API.', e);
+        }
+      }
+    } finally {
+      // 5. Reload past the HTTP cache. The cache-busting query string forces a
+      // revalidated index.html, which in turn pulls the current hashed assets.
+      const url = new URL(window.location.href);
+      url.searchParams.set('cache_bust', Date.now().toString());
+      window.location.replace(url.toString());
     }
   };
 
@@ -260,6 +307,16 @@ export const Header: React.FC<HeaderProps> = ({
                   <span>Return to Super Admin</span>
                 </button>
               )}
+
+              <button
+                onClick={handleClearCacheAndReload}
+                disabled={isClearingCache}
+                title="Discard cached data and assets, then reload the latest version"
+                className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <RotateCcw className={`w-4 h-4 text-slate-400 ${isClearingCache ? 'animate-spin' : ''}`} />
+                <span>{isClearingCache ? 'Clearing cache...' : 'Clear Cache & Reload'}</span>
+              </button>
 
               <button
                 onClick={async () => {
