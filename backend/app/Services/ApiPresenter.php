@@ -139,6 +139,7 @@ class ApiPresenter
         $qid = $documentByCode('qid');
         $passport = $documentByCode('passport');
         $license = $documentByCode('driving-license');
+        $healthCard = $documentByCode('health-card');
 
         return [
             'id' => (string) $employee->id,
@@ -187,6 +188,9 @@ class ApiPresenter
             'licenseNumber' => $license['documentNumber'] ?? '',
             'licenseExpiryDate' => $license['expiryDate'] ?? '',
             'licenseFileUrl' => $license['fileUrl'] ?? null,
+            'healthCardNumber' => $healthCard['documentNumber'] ?? '',
+            'healthCardExpiryDate' => $healthCard['expiryDate'] ?? '',
+            'healthCardFileUrl' => $healthCard['fileUrl'] ?? null,
             'documents' => $documents,
             'uploadedDocuments' => $documents->map(fn (array $document) => [
                 'id' => $document['id'],

@@ -104,7 +104,7 @@ class DatabaseSeeder extends Seeder
             ['Passport', 'passport', 'employee', true, true, 90],
             ['Visa', 'visa', 'employee', true, true, 30],
             ['Driving License', 'driving-license', 'employee', true, true, 30],
-            ['Health Card', 'health-card', 'employee', true, true, 30],
+            ['Health Card', 'health-card', 'employee', false, false, 30],
             ['Employment Contract', 'employment-contract', 'employee', false, false, 30],
             ['Labour Contract', 'labour-contract', 'employee', false, false, 30],
             ['Istimara', 'istimara', 'vehicle', true, true, 30],

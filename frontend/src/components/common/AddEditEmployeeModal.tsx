@@ -65,6 +65,8 @@ export const AddEditEmployeeModal: React.FC<AddEditEmployeeModalProps> = ({
     passportExpiryDate: '',
     licenseNumber: '',
     licenseExpiryDate: '',
+    healthCardNumber: '',
+    healthCardExpiryDate: '',
     nocStatus: '',
     tradeSpecialization: '',
     salaryPaymentMode: '',
@@ -94,7 +96,7 @@ export const AddEditEmployeeModal: React.FC<AddEditEmployeeModalProps> = ({
 // File Upload Helpers
 const handleFileUpload = (
   e: React.ChangeEvent<HTMLInputElement>,
-  type: 'profile' | 'passport' | 'license' | 'qid' | 'labour'
+  type: 'profile' | 'passport' | 'license' | 'qid' | 'labour' | 'health'
 ) => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -215,6 +217,26 @@ const handleFileUpload = (
           docItem,
         ],
       }));
+    } else if (type === 'health') {
+      const docItem = {
+        id: `doc-health-${Date.now()}`,
+        type: 'Health Card',
+        name: file.name,
+        fileUrl: dataUrl,
+        docNumber: formData.healthCardNumber,
+        expiryDate: formData.healthCardExpiryDate,
+      };
+
+      setFormData(prev => ({
+        ...prev,
+        healthCardFileUrl: dataUrl,
+        uploadedDocuments: [
+          ...(prev.uploadedDocuments || []).filter(
+            document => document.type !== 'Health Card'
+          ),
+          docItem,
+        ],
+      }));
     }
   };
 
@@ -239,8 +261,8 @@ const removeProfilePhoto = () => {
 
 // Delete Passport, License or QID
 const removeIdentityDocument = async (
-  code: 'passport' | 'driving-license' | 'qid' | 'labour-contract',
-  field: 'passportFileUrl' | 'licenseFileUrl' | 'qidFileUrl' | 'labourContractFileUrl'
+  code: 'passport' | 'driving-license' | 'qid' | 'labour-contract' | 'health-card',
+  field: 'passportFileUrl' | 'licenseFileUrl' | 'qidFileUrl' | 'labourContractFileUrl' | 'healthCardFileUrl'
 ) => {
   if (!window.confirm('Are you sure you want to delete this document?')) {
     return;
@@ -253,7 +275,9 @@ const removeIdentityDocument = async (
         ? 'License'
         : code === 'labour-contract'
           ? 'Labour Contract'
-          : 'QID';
+          : code === 'health-card'
+            ? 'Health Card'
+            : 'QID';
 
   try {
     // Previously saved document খুঁজবে
@@ -352,6 +376,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       await saveIdentityDocument('driving-license', formData.licenseNumber, formData.licenseExpiryDate, formData.licenseFileUrl, uploaded.find(item => item.type === 'License')?.name);
       await saveIdentityDocument('qid', formData.qidNumber, formData.qidExpiryDate, formData.qidFileUrl, uploaded.find(item => item.type === 'QID')?.name);
       await saveIdentityDocument('labour-contract', formData.labourContractNumber, formData.labourContractExpiryDate, formData.labourContractFileUrl, uploaded.find(item => item.type === 'Labour Contract')?.name);
+      await saveIdentityDocument('health-card', formData.healthCardNumber, formData.healthCardExpiryDate, formData.healthCardFileUrl, uploaded.find(item => item.type === 'Health Card')?.name);
 
       onSaveSuccess();
       onClose();
@@ -831,6 +856,69 @@ const handleSubmit = async (e: React.FormEvent) => {
                   type="file"
                   accept="image/*,application/pdf"
                   onChange={(e) => handleFileUpload(e, 'labour')}
+                  className="w-full border border-slate-300 rounded-xl p-1 text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Health Card Number</label>
+                <input
+                  type="text"
+                  value={formData.healthCardNumber || ''}
+                  onChange={(e) => setFormData({ ...formData, healthCardNumber: e.target.value })}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-purple-600 font-mono"
+                  placeholder="Optional"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Health Card Expiry</label>
+                <input
+                  type="date"
+                  value={formData.healthCardExpiryDate || ''}
+                  onChange={(e) => setFormData({ ...formData, healthCardExpiryDate: e.target.value })}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-900 focus:outline-none focus:border-purple-600"
+                />
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Health Card PDF / Scan
+                </label>
+
+                {formData.healthCardFileUrl && (
+                  <div className="mb-2 rounded-xl border border-emerald-200 bg-emerald-50 p-2">
+                    <p className="truncate text-xs font-semibold text-emerald-700">
+                      ✓ Current Health Card available
+                    </p>
+
+                    <div className="mt-1 flex gap-3">
+                      <a
+                        href={formData.healthCardFileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        View
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() => void removeIdentityDocument('health-card', 'healthCardFileUrl')}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-red-600"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => handleFileUpload(e, 'health')}
                   className="w-full border border-slate-300 rounded-xl p-1 text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200"
                 />
               </div>

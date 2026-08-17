@@ -429,7 +429,7 @@ INSERT INTO `document_types` (`id`, `name`, `code`, `owner_type`, `document_numb
 (2, 'Passport', 'passport', 'employee', 1, 0, 1, 0, 1, '[30,15,10,7,3,1,0]', NULL, 1, '2026-07-25 18:25:17', '2026-07-25 18:25:17'),
 (3, 'Visa', 'visa', 'employee', 1, 0, 1, 0, 1, '[30,15,10,7,3,1,0]', NULL, 1, '2026-07-25 18:25:17', '2026-07-25 18:25:17'),
 (4, 'Driving License', 'driving-license', 'employee', 1, 0, 1, 0, 1, '[30,15,10,7,3,1,0]', NULL, 1, '2026-07-25 18:25:17', '2026-07-25 18:25:17'),
-(5, 'Health Card', 'health-card', 'employee', 1, 0, 1, 0, 1, '[30,15,10,7,3,1,0]', NULL, 1, '2026-07-25 18:25:17', '2026-07-25 18:25:17'),
+(5, 'Health Card', 'health-card', 'employee', 0, 0, 0, 0, 1, '[30,15,10,7,3,1,0]', NULL, 1, '2026-07-25 18:25:17', '2026-07-25 18:25:17'),
 (6, 'Employment Contract', 'employment-contract', 'employee', 0, 0, 0, 0, 0, '[30,15,10,7,3,1,0]', NULL, 1, '2026-07-25 18:25:17', '2026-07-25 18:25:17'),
 (7, 'Istimara', 'istimara', 'vehicle', 1, 0, 1, 0, 1, '[30,15,10,7,3,1,0]', NULL, 1, '2026-07-25 18:25:17', '2026-07-25 18:25:17'),
 (8, 'Vehicle Insurance', 'vehicle-insurance', 'vehicle', 1, 0, 1, 0, 1, '[30,15,10,7,3,1,0]', NULL, 1, '2026-07-25 18:25:17', '2026-07-25 18:25:17'),
