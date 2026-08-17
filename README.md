@@ -35,6 +35,19 @@ document-expiry, vehicle and notification management system.
 - `database/UPGRADE-STF-GROUP-5-COMPANIES.sql` to upgrade an existing 4-company
   database in place, without losing any live data
 
+## Latest update
+
+Read [`docs/UPDATE-2026-08-BANGLA.md`](docs/UPDATE-2026-08-BANGLA.md) for the
+newest changes: bank account phone expiry, secure document previews, the full
+vehicle registration data set (plate / registration / issue / expiry / renew /
+chassis / engine) with printable details, add-edit-delete on company licenses,
+global loading animation on every action, and the performance work for 300+
+employees.
+
+Existing databases are upgraded with
+[`database/UPGRADE-FLEET-DATES-AND-BANK-PHONE-EXPIRY.sql`](database/UPGRADE-FLEET-DATES-AND-BANK-PHONE-EXPIRY.sql)
+or `php artisan migrate --force`.
+
 ## Start here
 
 For Webuzo installation, read

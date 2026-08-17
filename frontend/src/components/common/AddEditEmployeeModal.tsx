@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { Employee, Company, Department, Designation } from '../../types';
 import { db } from '../../services/db';
+import { SecureImage } from './SecureFile';
+import { FilePreviewModal } from './FilePreviewModal';
 
 interface AddEditEmployeeModalProps {
   employee: Partial<Employee> | null;
@@ -78,6 +80,10 @@ export const AddEditEmployeeModal: React.FC<AddEditEmployeeModalProps> = ({
   };
   const [formData, setFormData] = useState<Partial<Employee>>(emptyForm);
   const [isSaving, setIsSaving] = useState(false);
+  // Uploaded files live behind the authenticated /api/files endpoint, so they
+  // are streamed into a preview modal instead of being opened as a raw link
+  // (which used to bounce the browser to the login page).
+  const [preview, setPreview] = useState<{ source: string; title: string } | null>(null);
   useEffect(() => {
     if (!isOpen) return;
     if (employee) {
@@ -527,8 +533,8 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   {formData.profilePhoto && (
     <div className="mb-2 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-2">
-      <img
-        src={formData.profilePhoto}
+      <SecureImage
+        source={formData.profilePhoto}
         alt="Current profile"
         className="h-16 w-16 rounded-lg border border-slate-200 object-cover"
       />
@@ -537,15 +543,14 @@ const handleSubmit = async (e: React.FormEvent) => {
         <p className="font-semibold text-emerald-700">Current photo available</p>
 
         <div className="mt-1 flex gap-2">
-          <a
-            href={formData.profilePhoto}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600"
-          >
-            <Eye className="h-3.5 w-3.5" />
-            View
-          </a>
+          <button
+          type="button"
+          onClick={() => setPreview({ source: formData.profilePhoto as string, title: 'Profile photo' })}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          View
+        </button>
 
           <button
             type="button"
@@ -679,15 +684,14 @@ const handleSubmit = async (e: React.FormEvent) => {
       </p>
 
       <div className="mt-1 flex gap-3">
-        <a
-          href={formData.passportFileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => setPreview({ source: formData.passportFileUrl as string, title: 'Passport' })}
           className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600"
         >
           <Eye className="h-3.5 w-3.5" />
           View
-        </a>
+        </button>
 
         <button
           type="button"
@@ -723,15 +727,14 @@ const handleSubmit = async (e: React.FormEvent) => {
       </p>
 
       <div className="mt-1 flex gap-3">
-        <a
-          href={formData.licenseFileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => setPreview({ source: formData.licenseFileUrl as string, title: 'Driving licence' })}
           className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600"
         >
           <Eye className="h-3.5 w-3.5" />
           View
-        </a>
+        </button>
 
         <button
           type="button"
@@ -767,15 +770,14 @@ const handleSubmit = async (e: React.FormEvent) => {
       </p>
 
       <div className="mt-1 flex gap-3">
-        <a
-          href={formData.qidFileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => setPreview({ source: formData.qidFileUrl as string, title: 'Qatar ID (QID)' })}
           className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600"
         >
           <Eye className="h-3.5 w-3.5" />
           View
-        </a>
+        </button>
 
         <button
           type="button"
@@ -830,15 +832,14 @@ const handleSubmit = async (e: React.FormEvent) => {
                     </p>
 
                     <div className="mt-1 flex gap-3">
-                      <a
-                        href={formData.labourContractFileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        View
-                      </a>
+                      <button
+          type="button"
+          onClick={() => setPreview({ source: formData.labourContractFileUrl as string, title: 'Labour contract' })}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          View
+        </button>
 
                       <button
                         type="button"
@@ -893,15 +894,14 @@ const handleSubmit = async (e: React.FormEvent) => {
                     </p>
 
                     <div className="mt-1 flex gap-3">
-                      <a
-                        href={formData.healthCardFileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        View
-                      </a>
+                      <button
+          type="button"
+          onClick={() => setPreview({ source: formData.healthCardFileUrl as string, title: 'Health card' })}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-purple-600"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          View
+        </button>
 
                       <button
                         type="button"
@@ -1117,6 +1117,14 @@ const handleSubmit = async (e: React.FormEvent) => {
 
         </form>
       </div>
+
+      <FilePreviewModal
+        isOpen={Boolean(preview)}
+        source={preview?.source}
+        title={preview?.title || 'Document'}
+        subtitle={formData.fullName}
+        onClose={() => setPreview(null)}
+      />
     </div>
   );
 };

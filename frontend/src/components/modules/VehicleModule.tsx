@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  Car, Search, Plus, Filter, Edit, FileText, 
-  UserCheck, ShieldCheck, Check, X, RefreshCw, Archive, RotateCcw
+import { createPortal } from 'react-dom';
+import {
+  Car, Search, Plus, Edit, FileText, Printer, Paperclip,
+  X, Archive, RotateCcw,
 } from 'lucide-react';
 import { db } from '../../services/db';
 import { Vehicle, VehicleStatus, DocumentRecord } from '../../types';
 import { StatusBadge } from '../common/StatusBadge';
 import { VehicleDocumentModal } from '../common/VehicleDocumentModal';
+import { FilePreviewModal } from '../common/FilePreviewModal';
+import { ButtonSpinner, CardSkeleton } from '../common/LoadingSpinner';
 
 interface VehicleModuleProps {
   onOpenRenewModal: (doc: DocumentRecord) => void;
@@ -28,6 +31,10 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
 
   const [istimaraVehicle, setIstimaraVehicle] = useState<Vehicle | null>(null);
   const [viewVehicle, setViewVehicle] = useState<Vehicle | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<DocumentRecord | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [busyVehicleId, setBusyVehicleId] = useState<string | null>(null);
 
   const companies = db.getCompanies();
 
@@ -92,49 +99,64 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
       vehicleType: '',
       ownershipType: 'owned',
       registrationDate: new Date().toISOString().split('T')[0],
+      issueDate: '',
+      expiryDate: '',
+      renewDate: '',
       status: 'active',
     });
     setDriverSearch('');
+    setFormError('');
     setIsFormOpen(true);
   };
 
   const handleOpenEdit = (v: Vehicle) => {
     setEditingVehicle({ ...v });
     setDriverSearch(v.assignedDriverName || v.secondaryDriverName || '');
+    setFormError('');
     setIsFormOpen(true);
   };
 
   const handleSaveVehicle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingVehicle || !editingVehicle.plateNumber) return;
+    if (!editingVehicle || !editingVehicle.plateNumber || isSaving) return;
+    setIsSaving(true);
+    setFormError('');
     try {
       await db.saveVehicle(editingVehicle);
       setIsFormOpen(false);
       await vehicleQuery.refetch();
       onRefresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Unable to save vehicle.');
+      setFormError(error instanceof Error ? error.message : 'Unable to save vehicle.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleArchive = async (vehicle: Vehicle) => {
     if (!window.confirm(`Archive vehicle ${vehicle.plateNumber}? It can be restored later.`)) return;
+    setBusyVehicleId(vehicle.id);
     try {
       await db.archiveVehicle(vehicle.id);
       await vehicleQuery.refetch();
       onRefresh();
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Unable to archive vehicle.');
+    } finally {
+      setBusyVehicleId(null);
     }
   };
 
   const handleRestore = async (vehicle: Vehicle) => {
+    setBusyVehicleId(vehicle.id);
     try {
       await db.restoreVehicle(vehicle.id);
       await vehicleQuery.refetch();
       onRefresh();
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Unable to restore vehicle.');
+    } finally {
+      setBusyVehicleId(null);
     }
   };
 
@@ -192,11 +214,7 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
 
       {/* Vehicle Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {vehicleQuery.isLoading && (
-          <div className="md:col-span-2 lg:col-span-3 rounded-2xl border border-slate-200 bg-white p-10 text-center text-xs text-slate-500">
-            Loading vehicles…
-          </div>
-        )}
+        {vehicleQuery.isLoading && <CardSkeleton count={6} />}
         {vehicleQuery.isError && (
           <div className="md:col-span-2 lg:col-span-3 rounded-2xl border border-rose-200 bg-rose-50 p-10 text-center text-xs text-rose-700">
             {vehicleQuery.error instanceof Error ? vehicleQuery.error.message : 'Unable to load vehicles.'}
@@ -226,10 +244,27 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
                 </div>
 
                 <div className="mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80 space-y-1 text-xs">
-                  <div className="flex justify-between"><span>Plate #:</span> <b className="font-mono text-slate-900">{v.plateNumber}</b></div>
-                  <div className="flex justify-between"><span>Type:</span> <span className="font-medium">{v.vehicleType}</span></div>
+                  <div className="flex justify-between"><span>Plate No:</span> <b className="font-mono text-slate-900">{v.plateNumber || '-'}</b></div>
+                  <div className="flex justify-between"><span>Reg Date:</span> <span className="font-mono text-[11px] text-slate-700">{v.registrationDate || '-'}</span></div>
+                  <div className="flex justify-between"><span>Issue Date:</span> <span className="font-mono text-[11px] text-slate-700">{v.issueDate || '-'}</span></div>
+                  <div className="flex justify-between items-center">
+                    <span>Expiry Date:</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="font-mono text-[11px] text-slate-700">{v.expiryDate || '-'}</span>
+                      {v.expiryDate && (
+                        <StatusBadge
+                          type="expiry"
+                          status={v.registrationExpiryStatus || 'valid'}
+                          daysRemaining={v.registrationDaysRemaining ?? undefined}
+                        />
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between"><span>Renew Date:</span> <span className="font-mono text-[11px] text-slate-700">{v.renewDate || '-'}</span></div>
+                  <div className="flex justify-between"><span>Chassis No:</span> <span className="font-mono text-[11px] text-slate-600">{v.chassisNumber || '-'}</span></div>
+                  <div className="flex justify-between"><span>Engine No:</span> <span className="font-mono text-[11px] text-slate-600">{v.engineNumber || '-'}</span></div>
+                  <div className="flex justify-between"><span>Type:</span> <span className="font-medium">{v.vehicleType || '-'}</span></div>
                   <div className="flex justify-between"><span>Assigned Driver:</span> <b className="text-slate-800">{v.assignedDriverName || 'Unassigned'}</b></div>
-                  <div className="flex justify-between"><span>Chassis #:</span> <span className="font-mono text-[11px] text-slate-600">{v.chassisNumber}</span></div>
                 </div>
 
                 {/* Attached Vehicle Estimara / Insurance Docs */}
@@ -254,10 +289,19 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
                         <span className="font-medium text-slate-800">{doc.documentTypeName}</span>
                         <div className="flex items-center gap-1.5">
                           <StatusBadge type="expiry" status={doc.status} daysRemaining={doc.daysRemaining} />
+                          {doc.fileUrl && (
+                            <button
+                              onClick={() => setPreviewDoc(doc)}
+                              title="Preview document"
+                              className="inline-flex items-center gap-1 rounded bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 hover:bg-purple-100"
+                            >
+                              <Paperclip className="w-3 h-3" /> Preview
+                            </button>
+                          )}
                           {db.hasPermission('documents.renew') && (
                             <button
                               onClick={() => onOpenRenewModal(doc)}
-                              className="bg-slate-900 text-white font-semibold text-[10px] px-2 py-0.5 rounded"
+                              className="bg-slate-900 text-white font-semibold text-[10px] px-2 py-0.5 rounded hover:bg-slate-800"
                             >
                               Renew
                             </button>
@@ -269,30 +313,37 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+              <div className="pt-3 border-t border-slate-100 flex flex-wrap justify-end gap-2">
+                <button
+                  onClick={() => setViewVehicle(v)}
+                  className="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl inline-flex items-center gap-1"
+                >
+                  <FileText className="w-3.5 h-3.5" /> View Details
+                </button>
                 {v.status !== 'archived' && db.hasPermission('vehicles.manage') && (
-                  <button onClick={()=>setViewVehicle(v)} className="px-3 py-1.5 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl">View Details</button>
                   <button
                     onClick={() => handleOpenEdit(v)}
-                    className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl"
+                    className="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl inline-flex items-center gap-1"
                   >
-                    Edit Vehicle
+                    <Edit className="w-3.5 h-3.5" /> Edit Vehicle
                   </button>
                 )}
                 {v.status !== 'archived' && db.hasPermission('vehicles.archive') && (
                   <button
                     onClick={() => handleArchive(v)}
-                    className="px-3 py-1.5 text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl inline-flex items-center gap-1"
+                    disabled={busyVehicleId === v.id}
+                    className="px-3 py-1.5 text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl inline-flex items-center gap-1 disabled:opacity-60"
                   >
-                    <Archive className="w-3.5 h-3.5" /> Archive
+                    {busyVehicleId === v.id ? <ButtonSpinner /> : <Archive className="w-3.5 h-3.5" />} Archive
                   </button>
                 )}
                 {v.status === 'archived' && db.hasPermission('vehicles.restore') && (
                   <button
                     onClick={() => handleRestore(v)}
-                    className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl inline-flex items-center gap-1"
+                    disabled={busyVehicleId === v.id}
+                    className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl inline-flex items-center gap-1 disabled:opacity-60"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" /> Restore
+                    {busyVehicleId === v.id ? <ButtonSpinner /> : <RotateCcw className="w-3.5 h-3.5" />} Restore
                   </button>
                 )}
               </div>
@@ -337,6 +388,11 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
             </div>
 
             <form onSubmit={handleSaveVehicle} className="p-5 space-y-3 text-xs overflow-y-auto">
+              {formError && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 font-semibold text-rose-700">
+                  {formError}
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <label>
                   <span className="font-semibold text-slate-700 block mb-1">Company *</span>
@@ -508,11 +564,32 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
                 </label>
               </div>
 
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-3 space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+                  Registration / Istimara details
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label>
+                    <span className="font-semibold text-slate-700 block mb-1">Reg Date</span>
+                    <input type="date" value={editingVehicle.registrationDate || ''} onChange={event => setEditingVehicle({ ...editingVehicle, registrationDate: event.target.value })} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono" />
+                  </label>
+                  <label>
+                    <span className="font-semibold text-slate-700 block mb-1">Issue Date</span>
+                    <input type="date" value={editingVehicle.issueDate || ''} onChange={event => setEditingVehicle({ ...editingVehicle, issueDate: event.target.value })} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono" />
+                  </label>
+                  <label>
+                    <span className="font-semibold text-slate-700 block mb-1">Expiry Date</span>
+                    <input type="date" value={editingVehicle.expiryDate || ''} onChange={event => setEditingVehicle({ ...editingVehicle, expiryDate: event.target.value })} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono" />
+                    <span className="mt-1 block text-[11px] text-slate-500">Drives the fleet expiry badge and reminders.</span>
+                  </label>
+                  <label>
+                    <span className="font-semibold text-slate-700 block mb-1">Renew Date</span>
+                    <input type="date" value={editingVehicle.renewDate || ''} onChange={event => setEditingVehicle({ ...editingVehicle, renewDate: event.target.value })} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 font-mono" />
+                  </label>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
-                <label>
-                  <span className="font-semibold text-slate-700 block mb-1">Registration Date</span>
-                  <input type="date" value={editingVehicle.registrationDate || ''} onChange={event => setEditingVehicle({ ...editingVehicle, registrationDate: event.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2" />
-                </label>
                 <label>
                   <span className="font-semibold text-slate-700 block mb-1">Status</span>
                   <select value={editingVehicle.status || 'active'} onChange={event => setEditingVehicle({ ...editingVehicle, status: event.target.value as VehicleStatus })} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
@@ -540,9 +617,11 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-xs"
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-xs inline-flex items-center gap-1.5 disabled:opacity-60"
                 >
-                  Save Vehicle
+                  {isSaving && <ButtonSpinner />}
+                  <span>{isSaving ? 'Saving…' : 'Save Vehicle'}</span>
                 </button>
               </div>
             </form>
@@ -550,21 +629,151 @@ export const VehicleModule: React.FC<VehicleModuleProps> = ({ onOpenRenewModal, 
         </div>
       )}
 
-      {viewVehicle && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={()=>setViewVehicle(null)}>
-          <div onClick={e=>e.stopPropagation()} className="bg-white rounded-2xl w-full max-w-2xl p-6 space-y-3 max-h-[90vh] overflow-y-auto">
-            <h3 className="font-bold text-lg">{viewVehicle.vehicleName} - {viewVehicle.plateNumber}</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><b>Make:</b> {viewVehicle.make}</div><div><b>Model:</b> {viewVehicle.model}</div>
-              <div><b>Year:</b> {viewVehicle.year}</div><div><b>Color:</b> {viewVehicle.color}</div>
-              <div><b>Chassis:</b> {viewVehicle.chassisNumber}</div><div><b>Engine:</b> {viewVehicle.engineNumber}</div>
-              <div><b>Type:</b> {viewVehicle.vehicleType}</div><div><b>Status:</b> {viewVehicle.status}</div>
-              <div><b>Driver:</b> {viewVehicle.assignedDriverName||"-"}</div><div><b>Secondary:</b> {viewVehicle.secondaryDriverName||"-"}</div>
+      {viewVehicle && createPortal(
+        <div className="employee-print-overlay fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="employee-print-modal bg-white rounded-2xl w-full max-w-3xl my-auto max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 shadow-2xl">
+            <div className="no-print p-4 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Car className="w-5 h-5 text-amber-400" />
+                <div>
+                  <h3 className="font-bold text-sm">Vehicle Details</h3>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    {viewVehicle.internalVehicleId} • {companies.find(company => company.id === viewVehicle.companyId)?.name}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3.5 py-1.5 rounded-xl text-xs"
+                >
+                  <Printer className="w-4 h-4" /> <span>Print</span>
+                </button>
+                <button onClick={() => setViewVehicle(null)} aria-label="Close" className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            <div className="flex justify-end gap-2"><button onClick={()=>window.print()} className="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm">Print</button><button onClick={()=>setViewVehicle(null)} className="px-4 py-2 border rounded-xl text-sm">Close</button></div>
+
+            <div className="printable-form-container stf-print-sheet flex-1 overflow-y-auto p-6 space-y-5 text-sm">
+              <div className="border-b border-slate-200 pb-3 flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-black text-slate-900">
+                    {viewVehicle.vehicleName || `${viewVehicle.make} ${viewVehicle.model}`.trim() || viewVehicle.vehicleNumber}
+                  </h2>
+                  <p className="text-xs text-slate-500 font-mono">Plate No: {viewVehicle.plateNumber}</p>
+                </div>
+                <StatusBadge type="vehicle" status={viewVehicle.status} />
+              </div>
+
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Registration</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {([
+                    ['Plate No', viewVehicle.plateNumber],
+                    ['Reg Date', viewVehicle.registrationDate],
+                    ['Issue Date', viewVehicle.issueDate],
+                    ['Expiry Date', viewVehicle.expiryDate],
+                    ['Renew Date', viewVehicle.renewDate],
+                    ['Chassis No', viewVehicle.chassisNumber],
+                    ['Engine No', viewVehicle.engineNumber],
+                    ['Vehicle Number', viewVehicle.vehicleNumber],
+                  ] as [string, string | undefined][]).map(([label, text]) => (
+                    <div key={label} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+                      <p className="mt-0.5 font-semibold text-slate-900 font-mono">{text?.toString().trim() || 'N/A'}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Vehicle &amp; drivers</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {([
+                    ['Make', viewVehicle.make],
+                    ['Model', viewVehicle.model],
+                    ['Year', viewVehicle.year ? String(viewVehicle.year) : ''],
+                    ['Colour', viewVehicle.color],
+                    ['Vehicle type', viewVehicle.vehicleType],
+                    ['Ownership', viewVehicle.ownershipType],
+                    ['Primary driver', viewVehicle.assignedDriverName || ''],
+                    ['Secondary driver', viewVehicle.secondaryDriverName || ''],
+                  ] as [string, string | undefined][]).map(([label, text]) => (
+                    <div key={label} className="rounded-xl border border-slate-200 bg-white p-3">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+                      <p className="mt-0.5 font-semibold text-slate-900 capitalize">{text?.toString().trim() || 'N/A'}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Vehicle documents</p>
+                {(viewVehicle.documents || []).length === 0 ? (
+                  <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-400">No Istimara / insurance document uploaded yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {(viewVehicle.documents || []).map(doc => (
+                      <div key={doc.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
+                        <div>
+                          <p className="font-bold text-slate-900">{doc.documentTypeName}</p>
+                          <p className="font-mono text-[11px] text-slate-500">
+                            #{doc.documentNumber || 'N/A'} • Expires {doc.expiryDate || 'N/A'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <StatusBadge type="expiry" status={doc.status} daysRemaining={doc.daysRemaining} />
+                          {doc.fileUrl && (
+                            <button
+                              onClick={() => setPreviewDoc(doc)}
+                              className="no-print inline-flex items-center gap-1 rounded-lg bg-purple-50 px-2.5 py-1 font-bold text-purple-700 hover:bg-purple-100"
+                            >
+                              <Paperclip className="w-3.5 h-3.5" /> Preview
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {viewVehicle.notes && (
+                <div className="rounded-xl border border-slate-200 bg-white p-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Notes</p>
+                  <p className="mt-1 whitespace-pre-wrap text-slate-700">{viewVehicle.notes}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="no-print border-t border-slate-100 bg-slate-50 p-4 flex justify-end gap-2">
+              <button onClick={() => setViewVehicle(null)} className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                Close
+              </button>
+              {viewVehicle.status !== 'archived' && db.hasPermission('vehicles.manage') && (
+                <button
+                  onClick={() => { const vehicle = viewVehicle; setViewVehicle(null); handleOpenEdit(vehicle); }}
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-xs font-bold text-white hover:bg-slate-800 inline-flex items-center gap-1.5"
+                >
+                  <Edit className="w-3.5 h-3.5" /> Edit Vehicle
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
+
+      <FilePreviewModal
+        isOpen={Boolean(previewDoc?.fileUrl)}
+        source={previewDoc?.fileUrl}
+        title={`${previewDoc?.documentTypeName || 'Vehicle document'} — ${previewDoc?.ownerName || ''}`}
+        subtitle={previewDoc?.documentNumber ? `Document #${previewDoc.documentNumber}` : undefined}
+        fileName={previewDoc?.fileName}
+        mimeType={previewDoc?.fileMimeType}
+        onClose={() => setPreviewDoc(null)}
+      />
       <VehicleDocumentModal
         isOpen={Boolean(istimaraVehicle)}
         vehicle={istimaraVehicle}

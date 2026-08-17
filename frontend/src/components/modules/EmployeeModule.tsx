@@ -9,6 +9,7 @@ import { EmployeeDetailFormModal } from '../common/EmployeeDetailFormModal';
 import { AddEditEmployeeModal } from '../common/AddEditEmployeeModal';
 import { DocumentPreviewModal } from '../common/DocumentPreviewModal';
 import { SecureImage } from '../common/SecureFile';
+import { ButtonSpinner, TableSkeleton } from '../common/LoadingSpinner';
 
 interface EmployeeModuleProps {
   onOpenRenewModal: (doc: DocumentRecord) => void;
@@ -34,6 +35,9 @@ export const EmployeeModule: React.FC<EmployeeModuleProps> = ({ onOpenRenewModal
   // Selected Document for Preview Modal
   const [previewDocument, setPreviewDocument] = useState<DocumentRecord | null>(null);
   const [isPreviewDocOpen, setIsPreviewDocOpen] = useState<boolean>(false);
+
+  // Per-row spinner so the admin sees which record is being archived/restored.
+  const [busyEmployeeId, setBusyEmployeeId] = useState<string | null>(null);
 
   const departments = db.getDepartments();
 
@@ -135,22 +139,28 @@ export const EmployeeModule: React.FC<EmployeeModuleProps> = ({ onOpenRenewModal
 
   const handleArchive = async (employee: Employee) => {
     if (!window.confirm(`Archive ${employee.fullName}? The record can be restored later.`)) return;
+    setBusyEmployeeId(employee.id);
     try {
       await db.archiveEmployee(employee.id);
       await employeeQuery.refetch();
       onRefresh();
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Unable to archive employee.');
+    } finally {
+      setBusyEmployeeId(null);
     }
   };
 
   const handleRestore = async (employee: Employee) => {
+    setBusyEmployeeId(employee.id);
     try {
       await db.restoreEmployee(employee.id);
       await employeeQuery.refetch();
       onRefresh();
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Unable to restore employee.');
+    } finally {
+      setBusyEmployeeId(null);
     }
   };
 
@@ -280,11 +290,7 @@ export const EmployeeModule: React.FC<EmployeeModuleProps> = ({ onOpenRenewModal
             </thead>
             <tbody className="divide-y divide-slate-100">
               {employeeQuery.isLoading ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
-                    Loading employees…
-                  </td>
-                </tr>
+                <TableSkeleton rows={8} columns={7} />
               ) : employeeQuery.isError ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-rose-600 font-medium">
@@ -436,18 +442,20 @@ export const EmployeeModule: React.FC<EmployeeModuleProps> = ({ onOpenRenewModal
                           {emp.status !== 'archived' && db.hasPermission('employees.archive') && (
                             <button
                               onClick={() => handleArchive(emp)}
-                              className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors inline-flex items-center gap-1"
+                              disabled={busyEmployeeId === emp.id}
+                              className="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors inline-flex items-center gap-1 disabled:opacity-60"
                             >
-                              <Archive className="w-3.5 h-3.5" />
+                              {busyEmployeeId === emp.id ? <ButtonSpinner /> : <Archive className="w-3.5 h-3.5" />}
                               <span>Archive</span>
                             </button>
                           )}
                           {emp.status === 'archived' && db.hasPermission('employees.restore') && (
                             <button
                               onClick={() => handleRestore(emp)}
-                              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors inline-flex items-center gap-1"
+                              disabled={busyEmployeeId === emp.id}
+                              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors inline-flex items-center gap-1 disabled:opacity-60"
                             >
-                              <RotateCcw className="w-3.5 h-3.5" />
+                              {busyEmployeeId === emp.id ? <ButtonSpinner /> : <RotateCcw className="w-3.5 h-3.5" />}
                               <span>Restore</span>
                             </button>
                           )}

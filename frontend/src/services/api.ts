@@ -1,4 +1,5 @@
-import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import { busyTracker } from './busy';
 
 const API_BASE = (import.meta.env.VITE_API_BASE || '/api').replace(/\/$/, '');
 
@@ -23,20 +24,55 @@ const client = axios.create({
   headers: { Accept: 'application/json' },
 });
 
+const WRITE_METHODS = ['post', 'put', 'patch', 'delete'];
+
+type TrackedConfig = InternalAxiosRequestConfig & {
+  __busyKind?: 'read' | 'write';
+  __busyLabel?: string;
+};
+
+function busyKindOf(config: TrackedConfig): 'read' | 'write' {
+  return WRITE_METHODS.includes((config.method || 'get').toLowerCase()) ? 'write' : 'read';
+}
+
+function busyLabelOf(config: TrackedConfig): string {
+  if (config.__busyLabel) return config.__busyLabel;
+  const method = (config.method || 'get').toLowerCase();
+  if (method === 'delete') return 'Deleting…';
+  if (method === 'post' || method === 'put' || method === 'patch') return 'Saving…';
+  return 'Loading…';
+}
+
 client.interceptors.request.use(config => {
   const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const tracked = config as TrackedConfig;
+  tracked.__busyKind = busyKindOf(tracked);
+  tracked.__busyLabel = busyLabelOf(tracked);
+  busyTracker.start(tracked.__busyKind, tracked.__busyLabel);
   return config;
 });
 
+function releaseBusy(config?: TrackedConfig): void {
+  if (!config?.__busyKind) return;
+  busyTracker.finish(config.__busyKind, config.__busyLabel);
+  config.__busyKind = undefined;
+}
+
 client.interceptors.response.use(
-  response => response,
+  response => {
+    releaseBusy(response.config as TrackedConfig);
+    return response;
+  },
   error => {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
-      clearAuthToken();
-      window.dispatchEvent(new CustomEvent('stf:unauthorized'));
+    if (axios.isAxiosError(error)) {
+      releaseBusy(error.config as TrackedConfig);
+      if (error.response?.status === 401) {
+        clearAuthToken();
+        window.dispatchEvent(new CustomEvent('stf:unauthorized'));
+      }
     }
     return Promise.reject(error);
   },

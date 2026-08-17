@@ -1,26 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import { Sidebar, NavTab } from './components/layout/Sidebar';
 import { DashboardModule } from './components/modules/DashboardModule';
-import { EmployeeModule } from './components/modules/EmployeeModule';
-import { DynamicDocumentsModule } from './components/modules/DynamicDocumentsModule';
-import { DocumentTypesModule } from './components/modules/DocumentTypesModule';
-import { VehicleModule } from './components/modules/VehicleModule';
-import { BankDocumentsModule } from './components/modules/BankDocumentsModule';
-import { EmployeeMessageModule } from './components/modules/EmployeeMessageModule';
-import { CompanyDocumentsModule } from './components/modules/CompanyDocumentsModule';
-import { RemindersModule } from './components/modules/RemindersModule';
-import { TemplatesModule } from './components/modules/TemplatesModule';
-import { ReportsModule } from './components/modules/ReportsModule';
-import { ImportModule } from './components/modules/ImportModule';
-import { AuditModule } from './components/modules/AuditModule';
-import { SettingsModule } from './components/modules/SettingsModule';
+
+// Feature modules are code split so the first paint only downloads the shell
+// plus the dashboard. Heavy screens (settings, imports, reports) are fetched on
+// demand, which keeps the app snappy on slow connections.
+const EmployeeModule = lazy(() => import('./components/modules/EmployeeModule').then(m => ({ default: m.EmployeeModule })));
+const DynamicDocumentsModule = lazy(() => import('./components/modules/DynamicDocumentsModule').then(m => ({ default: m.DynamicDocumentsModule })));
+const DocumentTypesModule = lazy(() => import('./components/modules/DocumentTypesModule').then(m => ({ default: m.DocumentTypesModule })));
+const VehicleModule = lazy(() => import('./components/modules/VehicleModule').then(m => ({ default: m.VehicleModule })));
+const BankDocumentsModule = lazy(() => import('./components/modules/BankDocumentsModule').then(m => ({ default: m.BankDocumentsModule })));
+const EmployeeMessageModule = lazy(() => import('./components/modules/EmployeeMessageModule').then(m => ({ default: m.EmployeeMessageModule })));
+const CompanyDocumentsModule = lazy(() => import('./components/modules/CompanyDocumentsModule').then(m => ({ default: m.CompanyDocumentsModule })));
+const RemindersModule = lazy(() => import('./components/modules/RemindersModule').then(m => ({ default: m.RemindersModule })));
+const TemplatesModule = lazy(() => import('./components/modules/TemplatesModule').then(m => ({ default: m.TemplatesModule })));
+const ReportsModule = lazy(() => import('./components/modules/ReportsModule').then(m => ({ default: m.ReportsModule })));
+const ImportModule = lazy(() => import('./components/modules/ImportModule').then(m => ({ default: m.ImportModule })));
+const AuditModule = lazy(() => import('./components/modules/AuditModule').then(m => ({ default: m.AuditModule })));
+const SettingsModule = lazy(() => import('./components/modules/SettingsModule').then(m => ({ default: m.SettingsModule })));
 
 import { GlobalSearchModal } from './components/common/GlobalSearchModal';
 import { QuickUserSwitchModal } from './components/common/QuickUserSwitchModal';
 import { DocumentRenewalModal } from './components/common/DocumentRenewalModal';
+import { ModuleFallback } from './components/common/LoadingSpinner';
 
 import { CompanyWorkspaceSelectionView } from './components/common/CompanyWorkspaceSelectionView';
 import { LoginPage } from './components/common/LoginPage';
@@ -92,10 +97,12 @@ export function App() {
   // Refresh trigger counter to force re-renders when db changes
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
-  const refreshData = () => {
+  // Only refetch the queries that are actually mounted; blindly invalidating
+  // every cached query re-downloads every screen the admin ever opened.
+  const refreshData = useCallback(() => {
     setRefreshTrigger(prev => prev + 1);
-    void queryClient.invalidateQueries();
-  };
+    void queryClient.invalidateQueries({ type: 'active' });
+  }, [queryClient]);
 
   useEffect(() => {
     const handleUnauthorized = () => {
@@ -191,8 +198,9 @@ export function App() {
   if (booting) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center text-slate-700">
-        <div className="rounded-xl bg-white px-8 py-6 shadow border border-slate-200 font-semibold">
-          Loading STF Group ERP…
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-8 py-6 font-semibold shadow">
+          <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-amber-500" />
+          <span>Loading STF Group ERP…</span>
         </div>
       </div>
     );
@@ -261,6 +269,7 @@ export function App() {
 
             {/* Main Content Workspace */}
             <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
+              <Suspense fallback={<ModuleFallback />}>
               {currentTab === 'dashboard' && (
                 <DashboardModule onNavigate={handleNavigate}/>
               )}
@@ -323,6 +332,7 @@ export function App() {
               {currentTab === 'settings' && (
                 <SettingsModule onRefresh={refreshData} />
               )}
+              </Suspense>
             </main>
           </div>
         </>

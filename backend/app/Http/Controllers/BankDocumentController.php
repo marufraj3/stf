@@ -21,10 +21,17 @@ class BankDocumentController extends Controller
     {
         $user=$request->user();
         abort_unless($user->isSuperAdmin()||$user->can('employees.view'),403);
-        $q=BankDocument::query();
+        $q=BankDocument::query()->with(['bankFile','company']);
         $this->scope->apply($q,$user);
         if($request->filled('company_id')){ $cid=(int)$request->input('company_id'); $this->scope->authorize($user,$cid); $q->where('company_id',$cid);}
-        if($search=trim((string)$request->input('search'))){ $q->where(fn($x)=>$x->where('employee_name','like',"%$search%")->orWhere('iban_number','like',"%$search%")->orWhere('account_phone','like',"%$search%")); }
+        if($search=trim((string)$request->input('search'))){
+            $q->where(fn($x)=>$x->where('employee_name','like',"%$search%")
+                ->orWhere('employee_code','like',"%$search%")
+                ->orWhere('iban_number','like',"%$search%")
+                ->orWhere('nationality','like',"%$search%")
+                ->orWhere('personal_phone','like',"%$search%")
+                ->orWhere('account_phone','like',"%$search%"));
+        }
         if($request->filled('expiry_status')){
             $today=now('Asia/Qatar')->toDateString();
             match($request->input('expiry_status')){
@@ -33,7 +40,16 @@ class BankDocumentController extends Controller
                 default=>null
             };
         }
-        $sort=in_array($request->input('sort_by'),['employee_name','bank_card_expiry_date','created_at'],true)?$request->input('sort_by'):'created_at';
+        if($request->filled('phone_expiry_status')){
+            $today=now('Asia/Qatar')->toDateString();
+            match($request->input('phone_expiry_status')){
+                'expired'=>$q->whereNotNull('account_phone_expiry_date')->whereDate('account_phone_expiry_date','<',$today),
+                'valid'=>$q->whereDate('account_phone_expiry_date','>=',$today),
+                default=>null
+            };
+        }
+        if($request->filled('owner')){ $q->where('account_phone_owner',$request->input('owner')); }
+        $sort=in_array($request->input('sort_by'),['employee_name','bank_card_expiry_date','account_phone_expiry_date','created_at'],true)?$request->input('sort_by'):'created_at';
         $dir=$request->input('direction')==='asc'?'asc':'desc';
         $perPage=min(100,max(1,$request->integer('per_page',20)));
         $p=$q->orderBy($sort,$dir)->paginate($perPage);
@@ -56,6 +72,7 @@ class BankDocumentController extends Controller
             'employee_code'=>$emp->employee_code,
             'account_phone'=>$data['accountPhoneNumber']??null,
             'account_phone_owner'=>$data['accountPhoneOwner']??'company',
+            'account_phone_expiry_date'=>$data['accountPhoneExpiryDate']??null,
             'personal_phone'=>$data['personalPhoneNumber']??null,
             'nationality'=>$data['nationality']??null,
             'iban_number'=>$data['ibanNumber']??null,
@@ -65,7 +82,7 @@ class BankDocumentController extends Controller
             'created_by'=>$user->id,'updated_by'=>$user->id,
         ]);
         $this->audit->record($user,'CREATE_BANK_DOCUMENT','BankDocument',$bd->id,(int)$bd->company_id,null,$bd->toArray(),$r);
-        return response()->json(['data'=>$this->presenter->bankDocument($bd)],201);
+        return response()->json(['data'=>$this->presenter->bankDocument($bd->load(['bankFile','company']))],201);
     }
 
     public function update(Request $r,int $id): JsonResponse
@@ -84,6 +101,7 @@ class BankDocumentController extends Controller
             'company_id'=>$companyId,
             'account_phone'=>$data['accountPhoneNumber']??$bd->account_phone,
             'account_phone_owner'=>$data['accountPhoneOwner']??$bd->account_phone_owner,
+            'account_phone_expiry_date'=>array_key_exists('accountPhoneExpiryDate',$data)?$data['accountPhoneExpiryDate']:$bd->account_phone_expiry_date,
             'personal_phone'=>$data['personalPhoneNumber']??$bd->personal_phone,
             'nationality'=>$data['nationality']??$bd->nationality,
             'iban_number'=>$data['ibanNumber']??$bd->iban_number,
@@ -95,7 +113,7 @@ class BankDocumentController extends Controller
         if($r->boolean('removeBankDocument')) $bd->bank_file_id=null;
         $bd->save();
         $this->audit->record($user,'UPDATE_BANK_DOCUMENT','BankDocument',$bd->id,(int)$bd->company_id,$before,$bd->toArray(),$r);
-        return response()->json(['data'=>$this->presenter->bankDocument($bd)]);
+        return response()->json(['data'=>$this->presenter->bankDocument($bd->load(['bankFile','company']))]);
     }
 
     public function destroy(Request $r,int $id): JsonResponse
@@ -114,6 +132,7 @@ class BankDocumentController extends Controller
             'employeeId'=>[$partial?'sometimes':'required','integer','exists:employees,id'],
             'accountPhoneNumber'=>['nullable','string','max:40'],
             'accountPhoneOwner'=>['nullable',Rule::in(['company','employee'])],
+            'accountPhoneExpiryDate'=>['nullable','date'],
             'personalPhoneNumber'=>['nullable','string','max:40'],
             'nationality'=>['nullable','string','max:100'],
             'ibanNumber'=>['nullable','string','max:80'],

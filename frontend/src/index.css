@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Indeterminate progress bar used by the global busy indicator. */
+@keyframes stf-progress {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(120%); }
+  100% { transform: translateX(320%); }
+}
+
 @page {
   size: A4 portrait;
   margin: 0;
@@ -309,5 +316,19 @@
 
   .no-print {
     display: none !important;
+  }
+
+  /* Generic detail sheets (vehicle / bank document) are plain flowing HTML,
+     so they need their own page padding because @page uses a zero margin. */
+  .stf-print-sheet {
+    padding: 12mm !important;
+    font-size: 11pt !important;
+    color: #111827 !important;
+  }
+
+  .stf-print-sheet .grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
   }
 }
