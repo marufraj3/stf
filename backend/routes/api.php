@@ -10,6 +10,8 @@ use App\Http\Controllers\FileController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\BankDocumentController;
+use App\Http\Controllers\EmployeeMessageController;
 use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\OperationsController;
@@ -54,6 +56,14 @@ Route::middleware(['auth:sanctum', EnsureActiveUser::class, 'throttle:api'])->gr
         Route::put('/settings', [AccessController::class, 'updateSettings']);
         Route::get('/operations', [OperationsController::class, 'index']);
         Route::post('/operations/failed-jobs/{uuid}/retry', [OperationsController::class, 'retry']);
+
+        Route::get('/bank-documents', [BankDocumentController::class, 'index']);
+        Route::post('/bank-documents', [BankDocumentController::class, 'store']);
+        Route::put('/bank-documents/{id}', [BankDocumentController::class, 'update']);
+        Route::delete('/bank-documents/{id}', [BankDocumentController::class, 'destroy']);
+
+        Route::get('/employee-messages', [EmployeeMessageController::class, 'index']);
+        Route::post('/employee-messages', [EmployeeMessageController::class, 'store']);
 
         Route::get('/reports/export', [ReportController::class, 'export']);
         Route::post('/imports/inspect', [ImportController::class, 'inspect']);

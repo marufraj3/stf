@@ -388,6 +388,10 @@ export interface ExpiryCounts {
   sentNotifications: number;
   deliveredNotifications: number;
   failedNotifications: number;
+  totalBankDocuments: number;
+  expiredBankCards: number;
+  todayMessages: number;
+  todayDistinctMessagedEmployees: number;
 }
 
 export interface ProviderConfig {
@@ -401,6 +405,37 @@ export interface ProviderConfig {
   smsSenderId?: string;
   whatsappToken?: string;
   whatsappPhoneNumberId?: string;
+}
+
+export interface BankDocument {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  accountPhoneNumber: string;
+  accountPhoneOwner: 'company' | 'employee';
+  personalPhoneNumber: string;
+  nationality: string;
+  ibanNumber: string;
+  bankCardExpiryDate: string;
+  bankDocumentUrl?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface EmployeeMessageRecord {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  subject: string;
+  messageBody: string;
+  channel: string;
+  status: string;
+  createdBy: string;
+  senderName: string;
+  createdAt: string;
 }
 
 export interface SystemSettings {

@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\AuditLog;
+use App\Models\BankDocument;
 use App\Models\Document;
 use App\Models\DocumentType;
 use App\Models\Employee;
+use App\Models\EmployeeMessage;
 use App\Models\NotificationLog;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -61,8 +64,15 @@ class DashboardService
 
         $trackedAlerts = $this->trackedTypeAlerts($documents, $today);
 
+        $bankDocs = $this->companyQuery(BankDocument::query(), $user, $companyId);
+        $todayMessages = $this->companyQuery(EmployeeMessage::query(), $user, $companyId)->whereDate('created_at', $today->toDateString());
+        $todayAudit = AuditLog::query()->whereDate('created_at',$today->toDateString())
+            ->where(fn($q)=>$q->whereNull('company_id')->orWhereIn('company_id',$this->companies->ids($user)))
+            ->orderBy('created_at','desc')->limit(15)->get()->map(fn($l)=>$this->presenter->audit($l))->values();
+
         return [
             'documentTypeAlerts' => $trackedAlerts,
+            'todayHistory' => $todayAudit,
             'stats' => [
                 'expiringQid' => $trackedAlerts['qid']['expiringCount'] ?? 0,
                 'expiredQid' => $trackedAlerts['qid']['expiredCount'] ?? 0,
@@ -94,6 +104,10 @@ class DashboardService
                 'deliveredNotifications' => (clone $notifications)->where('status', 'delivered')->count(),
                 'failedNotifications' => (clone $notifications)
                     ->whereIn('status', ['failed', 'rejected'])->count(),
+                'totalBankDocuments' => (clone $bankDocs)->count(),
+                'expiredBankCards' => (clone $bankDocs)->whereNotNull('bank_card_expiry_date')->whereDate('bank_card_expiry_date','<',$today->toDateString())->count(),
+                'todayMessages' => (clone $todayMessages)->count(),
+                'todayDistinctMessagedEmployees' => (clone $todayMessages)->distinct('employee_id')->count('employee_id'),
             ],
             'urgentDocuments' => $urgent->get()
                 ->map(fn (Document $document) => $this->presenter->document($document))

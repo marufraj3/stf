@@ -1,5 +1,6 @@
 import {
   ActivityLog,
+  BankDocument,
   Company,
   Department,
   Designation,
@@ -7,6 +8,7 @@ import {
   DocumentRenewalRecord,
   DocumentType,
   Employee,
+  EmployeeMessageRecord,
   ExpiryCounts,
   NotificationLog,
   NotificationProviderSettings,
@@ -59,6 +61,7 @@ export type DashboardData = {
   stats: ExpiryCounts;
   /** Keyed by document type code: qid, passport, istimara. */
   documentTypeAlerts?: Record<string, DocumentTypeAlert>;
+  todayHistory?: ActivityLog[];
   urgentDocuments: DocumentRecord[];
   employeeCountsByCompany: Record<string, number>;
   appliedFilters: Record<string, unknown>;
@@ -375,6 +378,23 @@ class ApiBackedDatabase {
       direction: params.direction,
     }, '/audit-logs');
   }
+
+  async listBankDocuments(params:{search?:string;page?:number;pageSize?:number}):Promise<ServerPage<BankDocument>>{
+    return this.listResource<BankDocument>('bank-documents',{search:params.search,page:params.page,per_page:params.pageSize},'/bank-documents');
+  }
+  async saveBankDocument(v:any):Promise<BankDocument>{
+    const hasId=Boolean(v.id);
+    const res=await apiRequest<{data:BankDocument}>(hasId?`/bank-documents/${v.id}`:'/bank-documents',{method:hasId?'PUT':'POST',body:JSON.stringify(v)});
+    return res.data;
+  }
+  async deleteBankDocument(id:string){ await apiRequest(`/bank-documents/${id}`,{method:'DELETE'}); }
+  async listEmployeeMessages(params:{search?:string;employeeId?:string;page?:number;pageSize?:number}):Promise<ServerPage<EmployeeMessageRecord>>{
+    return this.listResource<EmployeeMessageRecord>('employee-messages',{search:params.search,employee_id:params.employeeId,page:params.page,per_page:params.pageSize},'/employee-messages');
+  }
+  async sendEmployeeMessage(v:{companyId:string;employeeId:string;employeeIds?:string[];subject?:string;messageBody:string}){
+    const res=await apiRequest<{data:any}>('/employee-messages',{method:'POST',body:JSON.stringify(v)}); return res.data;
+  }
+  toDataUrl(file:File):Promise<string>{ return new Promise((res,rej)=>{const r=new FileReader(); r.onload=()=>res(r.result as string); r.onerror=rej; r.readAsDataURL(file);}); }
 
   async dashboardSummary(params: {
     companyId?: string;
@@ -785,6 +805,10 @@ class ApiBackedDatabase {
       sentNotifications: notifications.filter(item => item.status === 'sent').length,
       deliveredNotifications: notifications.filter(item => item.status === 'delivered').length,
       failedNotifications: notifications.filter(item => item.status === 'failed').length,
+      totalBankDocuments: 0,
+      expiredBankCards: 0,
+      todayMessages: 0,
+      todayDistinctMessagedEmployees: 0,
     };
   }
 

@@ -8,6 +8,8 @@ import { EmployeeModule } from './components/modules/EmployeeModule';
 import { DynamicDocumentsModule } from './components/modules/DynamicDocumentsModule';
 import { DocumentTypesModule } from './components/modules/DocumentTypesModule';
 import { VehicleModule } from './components/modules/VehicleModule';
+import { BankDocumentsModule } from './components/modules/BankDocumentsModule';
+import { EmployeeMessageModule } from './components/modules/EmployeeMessageModule';
 import { CompanyDocumentsModule } from './components/modules/CompanyDocumentsModule';
 import { RemindersModule } from './components/modules/RemindersModule';
 import { TemplatesModule } from './components/modules/TemplatesModule';
@@ -33,6 +35,8 @@ const TAB_PERMISSIONS: Record<NavTab, string> = {
   documents: 'documents.view',
   'doc-types': 'document_types.view',
   vehicles: 'vehicles.view',
+  'bank-docs': 'employees.view',
+  'emp-messages': 'employees.view',
   'company-docs': 'company_documents.view',
   reminders: 'notifications.view',
   templates: 'templates.view',
@@ -48,6 +52,8 @@ const TAB_PATHS: Record<NavTab, string> = {
   documents: '/documents',
   'doc-types': '/document-types',
   vehicles: '/vehicles',
+  'bank-docs': '/bank-documents',
+  'emp-messages': '/employee-messages',
   'company-docs': '/company-documents',
   reminders: '/notifications',
   templates: '/notification-templates',
@@ -256,11 +262,7 @@ export function App() {
             {/* Main Content Workspace */}
             <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
               {currentTab === 'dashboard' && (
-                <DashboardModule
-                  onNavigate={handleNavigate}
-                  onOpenRenewModal={handleOpenRenewModal}
-                  onRefresh={refreshData}
-                />
+                <DashboardModule onNavigate={handleNavigate}/>
               )}
 
               {currentTab === 'employees' && (
@@ -288,6 +290,8 @@ export function App() {
                   onRefresh={refreshData}
                 />
               )}
+              {currentTab === 'bank-docs' && (<BankDocumentsModule onRefresh={refreshData}/>)}
+              {currentTab === 'emp-messages' && (<EmployeeMessageModule onRefresh={refreshData}/>)}
 
               {currentTab === 'company-docs' && (
                 <CompanyDocumentsModule

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AuditLog;
+use App\Models\BankDocument;
 use App\Models\Company;
 use App\Models\Department;
 use App\Models\Designation;
@@ -10,6 +11,7 @@ use App\Models\Document;
 use App\Models\DocumentRenewal;
 use App\Models\DocumentType;
 use App\Models\Employee;
+use App\Models\EmployeeMessage;
 use App\Models\NotificationLog;
 use App\Models\NotificationTemplate;
 use App\Models\ReminderRule;
@@ -399,6 +401,44 @@ class ApiPresenter
             'failureReason' => $log->failure_reason,
             'retryCount' => $log->retry_count,
             'idempotencyKey' => $log->idempotency_key,
+        ];
+    }
+
+    public function bankDocument(BankDocument $bd): array
+    {
+        return [
+            'id' => (string) $bd->id,
+            'companyId' => (string) $bd->company_id,
+            'employeeId' => (string) $bd->employee_id,
+            'employeeName' => $bd->employee_name,
+            'employeeCode' => $bd->employee_code ?? '',
+            'accountPhoneNumber' => $bd->account_phone ?? '',
+            'accountPhoneOwner' => $bd->account_phone_owner ?? 'company',
+            'personalPhoneNumber' => $bd->personal_phone ?? '',
+            'nationality' => $bd->nationality ?? '',
+            'ibanNumber' => $bd->iban_number ?? '',
+            'bankCardExpiryDate' => $this->date($bd->bank_card_expiry_date),
+            'bankDocumentUrl' => $this->fileUrl($bd->bank_file_id),
+            'notes' => $bd->notes ?? '',
+            'createdAt' => $bd->created_at?->toIso8601String(),
+            'updatedAt' => $bd->updated_at?->toIso8601String(),
+        ];
+    }
+
+    public function employeeMessage(EmployeeMessage $m): array
+    {
+        return [
+            'id' => (string) $m->id,
+            'companyId' => (string) $m->company_id,
+            'employeeId' => (string) $m->employee_id,
+            'employeeName' => $m->employee_name,
+            'subject' => $m->subject ?? '',
+            'messageBody' => $m->message_body,
+            'channel' => $m->channel,
+            'status' => $m->status,
+            'createdBy' => (string) ($m->created_by ?? ''),
+            'senderName' => $m->relationLoaded('sender') ? ($m->sender?->name ?? '') : (User::whereKey($m->created_by)->value('name') ?? ''),
+            'createdAt' => $m->created_at?->toIso8601String(),
         ];
     }
 

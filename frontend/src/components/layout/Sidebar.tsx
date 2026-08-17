@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { 
   LayoutDashboard, Users, FileText, Settings2, Car, 
   Building, Bell, MessageSquareCode, BarChart3, UploadCloud, 
-  History, Settings, ShieldAlert, AlertTriangle
+  History, Settings, ShieldAlert, AlertTriangle, CreditCard, MessageSquare
 } from 'lucide-react';
 import { db } from '../../services/db';
 
@@ -13,6 +13,8 @@ export type NavTab =
   | 'documents' 
   | 'doc-types' 
   | 'vehicles' 
+  | 'bank-docs'
+  | 'emp-messages'
   | 'company-docs' 
   | 'reminders' 
   | 'templates' 
@@ -39,6 +41,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
     { id: 'documents', label: 'Dynamic Documents', icon: FileText, permission: 'documents.view', badge: stats.expiredDocuments > 0 ? stats.expiredDocuments : undefined, badgeColor: 'bg-rose-500 text-white animate-pulse' },
     { id: 'doc-types', label: 'Document Types', icon: Settings2, permission: 'document_types.view' },
     { id: 'vehicles', label: 'Vehicle Fleet', icon: Car, permission: 'vehicles.view', badge: stats.totalVehicles, badgeColor: 'bg-slate-700 text-slate-200' },
+    { id: 'bank-docs', label: 'All Bank Document', icon: CreditCard, permission: 'employees.view' },
+    { id: 'emp-messages', label: 'Employee Message', icon: MessageSquare, permission: 'employees.view', badge: (stats as any).todayMessages||undefined, badgeColor: 'bg-blue-600 text-white' },
     { id: 'company-docs', label: 'Company Licenses', icon: Building, permission: 'company_documents.view' },
     { id: 'reminders', label: 'Reminders & Queue', icon: Bell, permission: 'notifications.view', badge: stats.failedNotifications > 0 ? stats.failedNotifications : undefined, badgeColor: 'bg-amber-500 text-white' },
     { id: 'templates', label: 'Notification Templates', icon: MessageSquareCode, permission: 'templates.view' },
