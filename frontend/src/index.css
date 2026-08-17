@@ -257,29 +257,10 @@
 }
 
 @media print {
-  html,
-  body,
-  #root {
-    width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    background: #fff !important;
-  }
-
-  body * {
-    visibility: hidden !important;
-  }
-
-  .employee-print-overlay,
-  .employee-print-modal,
-  .printable-form-container,
-  .printable-form-container *,
-  .official-form-pages,
-  .official-form-page {
-    visibility: visible !important;
+  /* The modal is rendered via createPortal directly under <body>, so hiding
+     every other body child gives us a clean print surface. */
+  body > :not(.employee-print-overlay) {
+    display: none !important;
   }
 
   .employee-print-overlay,
@@ -289,17 +270,22 @@
     position: static !important;
     display: block !important;
     width: auto !important;
-    height: auto !important;
     min-height: 0 !important;
     max-width: none !important;
     max-height: none !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
+    background: #fff !important;
     border: 0 !important;
     border-radius: 0 !important;
-    background: #fff !important;
     box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .employee-print-modal {
+    animation: none !important;
     transform: none !important;
   }
 
@@ -323,26 +309,5 @@
 
   .no-print {
     display: none !important;
-  }
-
-  table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-  }
-
-  tr,
-  td,
-  th,
-  img,
-  .employee-form-header,
-  .employee-section-title {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
-
-  .employee-form-header,
-  .employee-section-title {
-    break-after: avoid-page !important;
-    page-break-after: avoid !important;
   }
 }

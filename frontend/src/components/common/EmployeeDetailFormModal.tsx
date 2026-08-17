@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, Printer, User as UserIcon } from 'lucide-react';
 import { Employee, Company } from '../../types';
 import { db } from '../../services/db';
@@ -93,7 +94,9 @@ export const EmployeeDetailFormModal: React.FC<EmployeeDetailFormModalProps> = (
     ['Previous Company Name', display(employee.previousCompanyName), 'Bank / Wallet Details', display(employee.bankWalletDetails)],
   ];
 
-  return (
+  // Render directly under <body> so app-level layout (scroll containers,
+  // transforms, centering) cannot affect the printed form.
+  return createPortal(
     <div className="employee-print-overlay fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
       <div className="employee-print-modal bg-white rounded-2xl shadow-2xl border border-slate-300 w-full max-w-5xl max-h-[94vh] flex flex-col my-auto overflow-hidden animate-in zoom-in-95">
         <div className="p-4 bg-slate-900 text-white flex items-center justify-between shrink-0 no-print">
@@ -176,6 +179,7 @@ export const EmployeeDetailFormModal: React.FC<EmployeeDetailFormModalProps> = (
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
