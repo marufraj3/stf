@@ -66,7 +66,7 @@ alter table `employees` add unique `employees_company_id_employee_code_unique`(`
 alter table `employees` add index `employees_company_id_department_id_status_index`(`company_id`, `department_id`, `status`);
 alter table `employees` add index `employees_full_name_mobile_index`(`full_name`, `mobile`);
 alter table `employees` add index `employees_status_index`(`status`);
-create table `vehicles` (`id` bigint unsigned not null auto_increment primary key, `company_id` bigint unsigned not null, `internal_vehicle_id` varchar(60) not null, `vehicle_name` varchar(255) null, `vehicle_number` varchar(80) not null, `plate_number` varchar(80) not null, `make` varchar(100) null, `model` varchar(100) null, `year` smallint unsigned null, `colour` varchar(60) null, `chassis_number` varchar(120) null, `engine_number` varchar(120) null, `vehicle_type` varchar(80) null, `assigned_driver_id` bigint unsigned null, `secondary_driver_id` bigint unsigned null, `ownership_type` varchar(30) not null default 'owned', `registration_date` date null, `status` varchar(30) not null default 'active', `notes` text null, `created_by` bigint unsigned null, `updated_by` bigint unsigned null, `created_at` timestamp null, `updated_at` timestamp null, `deleted_at` timestamp null) default character set utf8mb4 collate 'utf8mb4_unicode_ci';
+create table `vehicles` (`id` bigint unsigned not null auto_increment primary key, `company_id` bigint unsigned not null, `internal_vehicle_id` varchar(60) not null, `vehicle_name` varchar(255) null, `vehicle_number` varchar(80) not null, `plate_number` varchar(80) not null, `make` varchar(100) null, `model` varchar(100) null, `year` smallint unsigned null, `colour` varchar(60) null, `chassis_number` varchar(120) null, `engine_number` varchar(120) null, `vehicle_type` varchar(80) null, `assigned_driver_id` bigint unsigned null, `secondary_driver_id` bigint unsigned null, `ownership_type` varchar(30) not null default 'owned', `registration_date` date null, `issue_date` date null, `expiry_date` date null, `renew_date` date null, `status` varchar(30) not null default 'active', `notes` text null, `created_by` bigint unsigned null, `updated_by` bigint unsigned null, `created_at` timestamp null, `updated_at` timestamp null, `deleted_at` timestamp null) default character set utf8mb4 collate 'utf8mb4_unicode_ci';
 alter table `vehicles` add constraint `vehicles_company_id_foreign` foreign key (`company_id`) references `companies` (`id`) on delete restrict;
 alter table `vehicles` add constraint `vehicles_assigned_driver_id_foreign` foreign key (`assigned_driver_id`) references `employees` (`id`) on delete set null;
 alter table `vehicles` add constraint `vehicles_secondary_driver_id_foreign` foreign key (`secondary_driver_id`) references `employees` (`id`) on delete set null;
@@ -342,6 +342,27 @@ INSERT INTO `company_user` (`id`, `company_id`, `user_id`, `is_primary`, `create
 INSERT INTO `company_user` (`id`, `company_id`, `user_id`, `is_primary`, `created_at`, `updated_at`) VALUES (4, 4, 1, 0, '2026-07-25 21:25:17', '2026-07-25 21:25:17');
 INSERT INTO `company_user` (`id`, `company_id`, `user_id`, `is_primary`, `created_at`, `updated_at`) VALUES (5, 5, 1, 0, '2026-07-25 21:25:17', '2026-07-25 21:25:17');
 
+create table `bank_documents` (`id` bigint unsigned not null auto_increment primary key, `company_id` bigint unsigned not null, `employee_id` bigint unsigned not null, `employee_name` varchar(255) not null, `employee_code` varchar(60) null, `account_phone` varchar(40) null, `account_phone_owner` varchar(20) not null default 'company', `account_phone_expiry_date` date null, `personal_phone` varchar(40) null, `nationality` varchar(100) null, `iban_number` varchar(80) null, `bank_card_expiry_date` date null, `bank_file_id` bigint unsigned null, `notes` text null, `created_by` bigint unsigned null, `updated_by` bigint unsigned null, `created_at` timestamp null, `updated_at` timestamp null, `deleted_at` timestamp null) default character set utf8mb4 collate 'utf8mb4_unicode_ci';
+alter table `bank_documents` add constraint `bank_documents_company_id_foreign` foreign key (`company_id`) references `companies` (`id`) on delete restrict;
+alter table `bank_documents` add constraint `bank_documents_employee_id_foreign` foreign key (`employee_id`) references `employees` (`id`) on delete restrict;
+alter table `bank_documents` add constraint `bank_documents_bank_file_id_foreign` foreign key (`bank_file_id`) references `stored_files` (`id`) on delete set null;
+alter table `bank_documents` add constraint `bank_documents_created_by_foreign` foreign key (`created_by`) references `users` (`id`) on delete set null;
+alter table `bank_documents` add constraint `bank_documents_updated_by_foreign` foreign key (`updated_by`) references `users` (`id`) on delete set null;
+alter table `bank_documents` add index `bank_documents_company_id_employee_id_index`(`company_id`, `employee_id`);
+alter table `bank_documents` add index `bank_documents_bank_card_expiry_date_index`(`bank_card_expiry_date`);
+alter table `bank_documents` add index `bank_documents_account_phone_expiry_date_index`(`account_phone_expiry_date`);
+alter table `bank_documents` add index `bank_documents_employee_name_index`(`employee_name`);
+create table `employee_messages` (`id` bigint unsigned not null auto_increment primary key, `company_id` bigint unsigned not null, `employee_id` bigint unsigned not null, `employee_name` varchar(255) not null, `subject` varchar(255) null, `message_body` text not null, `channel` varchar(20) not null default 'internal', `status` varchar(20) not null default 'sent', `created_by` bigint unsigned null, `created_at` timestamp null, `updated_at` timestamp null) default character set utf8mb4 collate 'utf8mb4_unicode_ci';
+alter table `employee_messages` add constraint `employee_messages_company_id_foreign` foreign key (`company_id`) references `companies` (`id`) on delete restrict;
+alter table `employee_messages` add constraint `employee_messages_employee_id_foreign` foreign key (`employee_id`) references `employees` (`id`) on delete restrict;
+alter table `employee_messages` add constraint `employee_messages_created_by_foreign` foreign key (`created_by`) references `users` (`id`) on delete set null;
+alter table `employee_messages` add index `employee_messages_company_id_employee_id_created_at_index`(`company_id`, `employee_id`, `created_at`);
+alter table `vehicles` add index `vehicles_company_id_expiry_date_index`(`company_id`, `expiry_date`);
+alter table `employees` add index `employees_company_id_full_name_index`(`company_id`, `full_name`);
+alter table `employees` add index `employees_employee_code_index`(`employee_code`);
+alter table `documents` add index `documents_owner_type_owner_id_index`(`owner_type`, `owner_id`);
+alter table `documents` add index `documents_company_id_expiry_date_index`(`company_id`, `expiry_date`);
+
 INSERT INTO `migrations` (`migration`, `batch`) VALUES
 ('0001_01_01_000000_create_users_table', 1),
 ('0001_01_01_000001_create_cache_table', 1),
@@ -349,7 +370,9 @@ INSERT INTO `migrations` (`migration`, `batch`) VALUES
 ('2026_07_24_145509_create_permission_tables', 1),
 ('2026_07_24_145512_create_personal_access_tokens_table', 1),
 ('2026_07_24_145520_create_erp_tables', 1),
-('2026_08_17_090000_add_stf_group_module_columns', 1);
+('2026_08_17_090000_add_stf_group_module_columns', 1),
+('2026_08_17_100000_create_bank_documents_and_messages', 1),
+('2026_08_18_090000_add_fleet_registration_and_bank_phone_expiry', 1);
 SET FOREIGN_KEY_CHECKS = 1;
 
--- Verification: 33 tables; employees=0, vehicles=0, documents=0, notification_logs=0.
+-- Verification: 35 tables; employees=0, vehicles=0, documents=0, notification_logs=0.

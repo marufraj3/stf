@@ -379,12 +379,33 @@ class ApiBackedDatabase {
     }, '/audit-logs');
   }
 
-  async listBankDocuments(params:{search?:string;page?:number;pageSize?:number}):Promise<ServerPage<BankDocument>>{
-    return this.listResource<BankDocument>('bank-documents',{search:params.search,page:params.page,per_page:params.pageSize},'/bank-documents');
+  async listBankDocuments(params: {
+    search?: string;
+    expiryStatus?: string;
+    phoneExpiryStatus?: string;
+    owner?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: string;
+    direction?: 'asc' | 'desc';
+  }): Promise<ServerPage<BankDocument>> {
+    return this.listResource<BankDocument>('bank-documents', {
+      search: params.search,
+      expiry_status: params.expiryStatus,
+      phone_expiry_status: params.phoneExpiryStatus,
+      owner: params.owner,
+      page: params.page,
+      per_page: params.pageSize,
+      sort_by: params.sortBy,
+      direction: params.direction,
+    }, '/bank-documents');
   }
-  async saveBankDocument(v:any):Promise<BankDocument>{
-    const hasId=Boolean(v.id);
-    const res=await apiRequest<{data:BankDocument}>(hasId?`/bank-documents/${v.id}`:'/bank-documents',{method:hasId?'PUT':'POST',body:JSON.stringify(v)});
+  async saveBankDocument(value: Partial<BankDocument> & { bankDocument?: string; bankDocumentFileName?: string }): Promise<BankDocument> {
+    const hasId = Boolean(value.id);
+    const res = await apiRequest<{ data: BankDocument }>(
+      hasId ? `/bank-documents/${value.id}` : '/bank-documents',
+      { method: hasId ? 'PUT' : 'POST', body: JSON.stringify(value) },
+    );
     return res.data;
   }
   async deleteBankDocument(id:string){ await apiRequest(`/bank-documents/${id}`,{method:'DELETE'}); }

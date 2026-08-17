@@ -57,10 +57,59 @@ class DashboardService
         }
 
         $urgent = clone $documents;
-        $urgent->whereNotNull('expiry_date')
+        // Eager load so presenting eight documents costs three queries, not 24.
+        $urgent->with(['documentType', 'currentFile'])
+            ->whereNotNull('expiry_date')
             ->whereDate('expiry_date', '<=', $today->addDays(90)->toDateString())
             ->orderBy('expiry_date')
             ->limit(8);
+
+        // One aggregate round-trip each for documents, employees and
+        // notifications instead of ~20 separate COUNT(*) statements. This is
+        // what keeps the dashboard fast on a database with 300+ employees.
+        $todayString = $today->toDateString();
+        $tomorrow = $today->addDay()->toDateString();
+        $documentTotals = (clone $documents)->selectRaw(
+            'COUNT(*) as total_documents,'
+            .' SUM(CASE WHEN expiry_date IS NOT NULL AND expiry_date < ? THEN 1 ELSE 0 END) as expired_documents,'
+            .' SUM(CASE WHEN expiry_date = ? THEN 1 ELSE 0 END) as expiring_today,'
+            .' SUM(CASE WHEN expiry_date BETWEEN ? AND ? THEN 1 ELSE 0 END) as expiring_seven,'
+            .' SUM(CASE WHEN expiry_date BETWEEN ? AND ? THEN 1 ELSE 0 END) as expiring_fifteen,'
+            .' SUM(CASE WHEN expiry_date BETWEEN ? AND ? THEN 1 ELSE 0 END) as expiring_thirty,'
+            .' SUM(CASE WHEN expiry_date IS NULL THEN 1 ELSE 0 END) as without_expiry',
+            [
+                $todayString,
+                $todayString,
+                $tomorrow, $today->addDays(7)->toDateString(),
+                $tomorrow, $today->addDays(15)->toDateString(),
+                $tomorrow, $today->addDays(30)->toDateString(),
+            ],
+        )->first();
+
+        $employeeTotals = (clone $employees)->selectRaw(
+            'COUNT(*) as total_employees,'
+            .' SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active_employees,'
+            .' SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as cancelled_employees',
+            ['active', 'cancelled'],
+        )->first();
+
+        $notificationTotals = (clone $notifications)->selectRaw(
+            'SUM(CASE WHEN channel = ? AND created_at >= ? THEN 1 ELSE 0 END) as today_sms,'
+            .' SUM(CASE WHEN channel = ? AND created_at >= ? THEN 1 ELSE 0 END) as today_whatsapp,'
+            .' SUM(CASE WHEN channel = ? AND created_at >= ? THEN 1 ELSE 0 END) as today_email,'
+            .' SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as queued,'
+            .' SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as sent,'
+            .' SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as delivered,'
+            .' SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) as failed',
+            [
+                'sms', $todayString.' 00:00:00',
+                'whatsapp', $todayString.' 00:00:00',
+                'email', $todayString.' 00:00:00',
+                'queued', 'sent', 'delivered', 'failed', 'rejected',
+            ],
+        )->first();
+
+        $number = static fn (mixed $value): int => (int) ($value ?? 0);
 
         $trackedAlerts = $this->trackedTypeAlerts($documents, $today);
 
@@ -80,30 +129,25 @@ class DashboardService
                 'expiredPassport' => $trackedAlerts['passport']['expiredCount'] ?? 0,
                 'expiringIstimara' => $trackedAlerts['istimara']['expiringCount'] ?? 0,
                 'expiredIstimara' => $trackedAlerts['istimara']['expiredCount'] ?? 0,
-                'totalEmployees' => (clone $employees)->count(),
-                'activeEmployees' => (clone $employees)->where('status', 'active')->count(),
-                'cancelledEmployees' => (clone $employees)->where('status', 'cancelled')->count(),
+                'totalEmployees' => $number($employeeTotals?->total_employees),
+                'activeEmployees' => $number($employeeTotals?->active_employees),
+                'cancelledEmployees' => $number($employeeTotals?->cancelled_employees),
                 'archivedEmployees' => $archivedEmployees->count(),
                 'totalVehicles' => $vehicles->count(),
-                'totalDocuments' => (clone $documents)->count(),
-                'expiredDocuments' => (clone $documents)
-                    ->whereNotNull('expiry_date')->whereDate('expiry_date', '<', $today->toDateString())->count(),
-                'expiringToday' => (clone $documents)->whereDate('expiry_date', $today->toDateString())->count(),
-                'expiringIn7Days' => $this->countExpiryWindow($documents, $today, 1, 7),
-                'expiringIn15Days' => $this->countExpiryWindow($documents, $today, 1, 15),
-                'expiringIn30Days' => $this->countExpiryWindow($documents, $today, 1, 30),
-                'documentsWithoutExpiry' => (clone $documents)->whereNull('expiry_date')->count(),
-                'todaySmsCount' => (clone $notifications)
-                    ->where('channel', 'sms')->whereDate('created_at', $today->toDateString())->count(),
-                'todayWhatsappCount' => (clone $notifications)
-                    ->where('channel', 'whatsapp')->whereDate('created_at', $today->toDateString())->count(),
-                'todayEmailCount' => (clone $notifications)
-                    ->where('channel', 'email')->whereDate('created_at', $today->toDateString())->count(),
-                'queuedNotifications' => (clone $notifications)->where('status', 'queued')->count(),
-                'sentNotifications' => (clone $notifications)->where('status', 'sent')->count(),
-                'deliveredNotifications' => (clone $notifications)->where('status', 'delivered')->count(),
-                'failedNotifications' => (clone $notifications)
-                    ->whereIn('status', ['failed', 'rejected'])->count(),
+                'totalDocuments' => $number($documentTotals?->total_documents),
+                'expiredDocuments' => $number($documentTotals?->expired_documents),
+                'expiringToday' => $number($documentTotals?->expiring_today),
+                'expiringIn7Days' => $number($documentTotals?->expiring_seven),
+                'expiringIn15Days' => $number($documentTotals?->expiring_fifteen),
+                'expiringIn30Days' => $number($documentTotals?->expiring_thirty),
+                'documentsWithoutExpiry' => $number($documentTotals?->without_expiry),
+                'todaySmsCount' => $number($notificationTotals?->today_sms),
+                'todayWhatsappCount' => $number($notificationTotals?->today_whatsapp),
+                'todayEmailCount' => $number($notificationTotals?->today_email),
+                'queuedNotifications' => $number($notificationTotals?->queued),
+                'sentNotifications' => $number($notificationTotals?->sent),
+                'deliveredNotifications' => $number($notificationTotals?->delivered),
+                'failedNotifications' => $number($notificationTotals?->failed),
                 'totalBankDocuments' => (clone $bankDocs)->count(),
                 'expiredBankCards' => (clone $bankDocs)->whereNotNull('bank_card_expiry_date')->whereDate('bank_card_expiry_date','<',$today->toDateString())->count(),
                 'todayMessages' => (clone $todayMessages)->count(),
@@ -224,11 +268,4 @@ class DashboardService
         }
     }
 
-    private function countExpiryWindow(Builder $documents, CarbonImmutable $today, int $from, int $to): int
-    {
-        return (clone $documents)->whereBetween('expiry_date', [
-            $today->addDays($from)->toDateString(),
-            $today->addDays($to)->toDateString(),
-        ])->count();
-    }
 }

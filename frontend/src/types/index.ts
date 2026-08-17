@@ -258,6 +258,14 @@ export interface Vehicle {
   secondaryDriverName?: string;
   ownershipType: 'owned' | 'leased' | 'rented';
   registrationDate: string;
+  /** Istimara issue date. */
+  issueDate?: string;
+  /** Istimara / registration expiry date. */
+  expiryDate?: string;
+  /** Last renewal date. */
+  renewDate?: string;
+  registrationExpiryStatus?: ExpiryStatus;
+  registrationDaysRemaining?: number | null;
   status: VehicleStatus;
   notes?: string;
   documents?: DocumentRecord[];
@@ -413,13 +421,21 @@ export interface BankDocument {
   employeeId: string;
   employeeName: string;
   employeeCode: string;
+  companyName?: string;
   accountPhoneNumber: string;
   accountPhoneOwner: 'company' | 'employee';
+  accountPhoneExpiryDate?: string;
+  accountPhoneExpiryStatus?: ExpiryStatus;
+  accountPhoneDaysRemaining?: number | null;
   personalPhoneNumber: string;
   nationality: string;
   ibanNumber: string;
   bankCardExpiryDate: string;
+  bankCardExpiryStatus?: ExpiryStatus;
+  bankCardDaysRemaining?: number | null;
   bankDocumentUrl?: string;
+  bankDocumentFileName?: string;
+  bankDocumentMimeType?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;

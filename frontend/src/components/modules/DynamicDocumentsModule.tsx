@@ -8,6 +8,7 @@ import { db } from '../../services/db';
 import { DocumentRecord, ExpiryStatus, OwnerType } from '../../types';
 import { StatusBadge } from '../common/StatusBadge';
 import { downloadSecureFile, useSecureFileUrl } from '../common/SecureFile';
+import { ButtonSpinner, TableSkeleton } from '../common/LoadingSpinner';
 
 interface DynamicDocumentsModuleProps {
   initialStatusFilter?: string;
@@ -48,6 +49,8 @@ export const DynamicDocumentsModule: React.FC<DynamicDocumentsModuleProps> = ({
 
   const docTypes = db.getDocumentTypes();
   const companies = db.getCompanies();
+  const [isSaving, setIsSaving] = useState(false);
+  const [busyDocId, setBusyDocId] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedOwnerSearch(ownerSearch.trim()), 300);
@@ -153,6 +156,8 @@ export const DynamicDocumentsModule: React.FC<DynamicDocumentsModuleProps> = ({
       alert('Unable to resolve the owner company.');
       return;
     }
+    if (isSaving) return;
+    setIsSaving(true);
     try {
       await db.saveDocument({ ...newDocData, companyId });
       setIsAddOpen(false);
@@ -160,27 +165,35 @@ export const DynamicDocumentsModule: React.FC<DynamicDocumentsModuleProps> = ({
       onRefresh();
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Unable to save document.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleArchive = async (document: DocumentRecord) => {
     if (!window.confirm(`Archive ${document.documentTypeName} for ${document.ownerName}?`)) return;
+    setBusyDocId(document.id);
     try {
       await db.archiveDocument(document.id);
       await documentQuery.refetch();
       onRefresh();
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Unable to archive document.');
+    } finally {
+      setBusyDocId(null);
     }
   };
 
   const handleRestore = async (document: DocumentRecord) => {
+    setBusyDocId(document.id);
     try {
       await db.restoreDocument(document.id);
       await documentQuery.refetch();
       onRefresh();
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Unable to restore document.');
+    } finally {
+      setBusyDocId(null);
     }
   };
 
@@ -302,9 +315,7 @@ export const DynamicDocumentsModule: React.FC<DynamicDocumentsModuleProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-100">
               {documentQuery.isLoading ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400">Loading documents…</td>
-                </tr>
+                <TableSkeleton rows={8} columns={7} />
               ) : documentQuery.isError ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-rose-600">
@@ -369,17 +380,19 @@ export const DynamicDocumentsModule: React.FC<DynamicDocumentsModuleProps> = ({
                           <button
                             onClick={() => handleArchive(doc)}
                             title="Archive document"
-                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg"
+                            disabled={busyDocId === doc.id}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg disabled:opacity-60"
                           >
-                            <Archive className="w-4 h-4" />
+                            {busyDocId === doc.id ? <ButtonSpinner /> : <Archive className="w-4 h-4" />}
                           </button>
                         )}
                         {doc.archivedAt && db.hasPermission('documents.restore') && (
                           <button
                             onClick={() => handleRestore(doc)}
-                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700"
+                            disabled={busyDocId === doc.id}
+                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1 font-bold text-emerald-700 disabled:opacity-60"
                           >
-                            <RotateCcw className="w-3.5 h-3.5" /> Restore
+                            {busyDocId === doc.id ? <ButtonSpinner /> : <RotateCcw className="w-3.5 h-3.5" />} Restore
                           </button>
                         )}
                       </div>
@@ -632,9 +645,11 @@ export const DynamicDocumentsModule: React.FC<DynamicDocumentsModuleProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl shadow-xs"
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl shadow-xs inline-flex items-center gap-1.5 disabled:opacity-60"
                 >
-                  {newDocData.id ? 'Save Document' : 'Upload Document'}
+                  {isSaving && <ButtonSpinner />}
+                  <span>{isSaving ? 'Saving…' : newDocData.id ? 'Save Document' : 'Upload Document'}</span>
                 </button>
               </div>
             </form>

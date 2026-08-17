@@ -299,6 +299,7 @@ class ApiPresenter
         $documents = $vehicle->relationLoaded('documents')
             ? $vehicle->documents->map(fn (Document $document) => $this->document($document))->values()
             : collect();
+        $registration = $this->expiryStatus($vehicle->expiry_date, 30);
 
         return [
             'id' => (string) $vehicle->id,
@@ -326,6 +327,11 @@ class ApiPresenter
                 : ($vehicle->secondary_driver_id ? Employee::whereKey($vehicle->secondary_driver_id)->value('full_name') : null),
             'ownershipType' => $vehicle->ownership_type,
             'registrationDate' => $this->date($vehicle->registration_date),
+            'issueDate' => $this->date($vehicle->issue_date),
+            'expiryDate' => $this->date($vehicle->expiry_date),
+            'renewDate' => $this->date($vehicle->renew_date),
+            'registrationExpiryStatus' => $registration['status'],
+            'registrationDaysRemaining' => $registration['daysRemaining'],
             'status' => $vehicle->deleted_at ? 'archived' : $vehicle->status,
             'notes' => $vehicle->notes,
             'documents' => $documents,
@@ -406,19 +412,33 @@ class ApiPresenter
 
     public function bankDocument(BankDocument $bd): array
     {
+        $card = $this->expiryStatus($bd->bank_card_expiry_date, 30);
+        $phone = $this->expiryStatus($bd->account_phone_expiry_date, 30);
+        $file = $bd->relationLoaded('bankFile') ? $bd->bankFile : null;
+
         return [
             'id' => (string) $bd->id,
             'companyId' => (string) $bd->company_id,
+            'companyName' => $bd->relationLoaded('company')
+                ? ($bd->company?->name ?? '')
+                : (Company::whereKey($bd->company_id)->value('name') ?? ''),
             'employeeId' => (string) $bd->employee_id,
             'employeeName' => $bd->employee_name,
             'employeeCode' => $bd->employee_code ?? '',
             'accountPhoneNumber' => $bd->account_phone ?? '',
             'accountPhoneOwner' => $bd->account_phone_owner ?? 'company',
+            'accountPhoneExpiryDate' => $this->date($bd->account_phone_expiry_date),
+            'accountPhoneExpiryStatus' => $phone['status'],
+            'accountPhoneDaysRemaining' => $phone['daysRemaining'],
             'personalPhoneNumber' => $bd->personal_phone ?? '',
             'nationality' => $bd->nationality ?? '',
             'ibanNumber' => $bd->iban_number ?? '',
             'bankCardExpiryDate' => $this->date($bd->bank_card_expiry_date),
+            'bankCardExpiryStatus' => $card['status'],
+            'bankCardDaysRemaining' => $card['daysRemaining'],
             'bankDocumentUrl' => $this->fileUrl($bd->bank_file_id),
+            'bankDocumentFileName' => $file?->original_name ?? '',
+            'bankDocumentMimeType' => $file?->mime_type ?? '',
             'notes' => $bd->notes ?? '',
             'createdAt' => $bd->created_at?->toIso8601String(),
             'updatedAt' => $bd->updated_at?->toIso8601String(),

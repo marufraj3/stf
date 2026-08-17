@@ -15,7 +15,12 @@ class Vehicle extends Model
 
     protected function casts(): array
     {
-        return ['registration_date' => 'date:Y-m-d'];
+        return [
+            'registration_date' => 'date:Y-m-d',
+            'issue_date' => 'date:Y-m-d',
+            'expiry_date' => 'date:Y-m-d',
+            'renew_date' => 'date:Y-m-d',
+        ];
     }
 
     public function company(): BelongsTo
