@@ -363,6 +363,16 @@ alter table `employees` add index `employees_employee_code_index`(`employee_code
 alter table `documents` add index `documents_owner_type_owner_id_index`(`owner_type`, `owner_id`);
 alter table `documents` add index `documents_company_id_expiry_date_index`(`company_id`, `expiry_date`);
 
+
+CREATE TABLE `accounting_accounts` (`id` bigint unsigned not null auto_increment primary key, `company_id` bigint unsigned not null, `employee_id` bigint unsigned null, `vehicle_id` bigint unsigned null, `account_type` varchar(40) not null, `title` varchar(255) not null, `reference_no` varchar(100) null, `start_date` date null, `end_date` date null, `amount` decimal(12,2) not null default 0, `total_amount` decimal(12,2) null, `down_payment_percent` decimal(5,2) null, `interest_percent` decimal(5,2) null, `program_months` int unsigned null, `status` varchar(30) not null default 'active', `details` json null, `notes` text null, `created_by` bigint unsigned null, `updated_by` bigint unsigned null, `created_at` timestamp null, `updated_at` timestamp null, `deleted_at` timestamp null) default character set utf8mb4 collate 'utf8mb4_unicode_ci';
+alter table `accounting_accounts` add constraint `accounting_accounts_company_id_foreign` foreign key (`company_id`) references `companies` (`id`) on delete cascade, add constraint `accounting_accounts_employee_id_foreign` foreign key (`employee_id`) references `employees` (`id`) on delete set null, add constraint `accounting_accounts_vehicle_id_foreign` foreign key (`vehicle_id`) references `vehicles` (`id`) on delete set null, add constraint `accounting_accounts_created_by_foreign` foreign key (`created_by`) references `users` (`id`) on delete set null, add constraint `accounting_accounts_updated_by_foreign` foreign key (`updated_by`) references `users` (`id`) on delete set null;
+alter table `accounting_accounts` add index `accounting_accounts_company_id_account_type_status_index`(`company_id`, `account_type`, `status`);
+CREATE TABLE `accounting_payments` (`id` bigint unsigned not null auto_increment primary key, `accounting_account_id` bigint unsigned not null, `payment_date` date null, `due_date` date null, `period_label` varchar(100) null, `amount_due` decimal(12,2) not null default 0, `amount_paid` decimal(12,2) not null default 0, `voucher_no` varchar(100) null, `payment_method` varchar(50) null, `status` varchar(20) not null default 'due', `notes` text null, `created_by` bigint unsigned null, `created_at` timestamp null, `updated_at` timestamp null);
+alter table `accounting_payments` add constraint `accounting_payments_accounting_account_id_foreign` foreign key (`accounting_account_id`) references `accounting_accounts` (`id`) on delete cascade, add constraint `accounting_payments_created_by_foreign` foreign key (`created_by`) references `users` (`id`) on delete set null;
+alter table `accounting_payments` add index `accounting_payments_account_id_status_payment_date_index`(`accounting_account_id`, `status`, `payment_date`);
+INSERT INTO `permissions` (`id`, `name`, `guard_name`, `created_at`, `updated_at`) VALUES (48, 'accounting.view', 'web', NOW(), NOW()), (49, 'accounting.manage', 'web', NOW(), NOW()), (50, 'accounting.payments.manage', 'web', NOW(), NOW());
+INSERT INTO `role_has_permissions` (`permission_id`, `role_id`) VALUES (48,1),(49,1),(50,1);
+
 INSERT INTO `migrations` (`migration`, `batch`) VALUES
 ('0001_01_01_000000_create_users_table', 1),
 ('0001_01_01_000001_create_cache_table', 1),
@@ -372,7 +382,8 @@ INSERT INTO `migrations` (`migration`, `batch`) VALUES
 ('2026_07_24_145520_create_erp_tables', 1),
 ('2026_08_17_090000_add_stf_group_module_columns', 1),
 ('2026_08_17_100000_create_bank_documents_and_messages', 1),
-('2026_08_18_090000_add_fleet_registration_and_bank_phone_expiry', 1);
+('2026_08_18_090000_add_fleet_registration_and_bank_phone_expiry', 1),
+('2026_09_12_090000_create_accounting_tables', 1);
 SET FOREIGN_KEY_CHECKS = 1;
 
--- Verification: 35 tables; employees=0, vehicles=0, documents=0, notification_logs=0.
+-- Verification: 37 tables; employees=0, vehicles=0, documents=0, notification_logs=0.

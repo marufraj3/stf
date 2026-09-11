@@ -62,6 +62,14 @@ Route::middleware(['auth:sanctum', EnsureActiveUser::class, 'throttle:api'])->gr
         Route::put('/bank-documents/{id}', [BankDocumentController::class, 'update']);
         Route::delete('/bank-documents/{id}', [BankDocumentController::class, 'destroy']);
 
+        Route::get('/accounting/accounts', [AccountingController::class, 'accounts']);
+        Route::post('/accounting/accounts', [AccountingController::class, 'storeAccount']);
+        Route::put('/accounting/accounts/{account}', [AccountingController::class, 'updateAccount']);
+        Route::delete('/accounting/accounts/{account}', [AccountingController::class, 'deleteAccount']);
+        Route::get('/accounting/payments', [AccountingController::class, 'payments']);
+        Route::post('/accounting/payments', [AccountingController::class, 'storePayment']);
+        Route::put('/accounting/payments/{payment}', [AccountingController::class, 'updatePayment']);
+        Route::delete('/accounting/payments/{payment}', [AccountingController::class, 'deletePayment']);
         Route::get('/employee-messages', [EmployeeMessageController::class, 'index']);
         Route::post('/employee-messages', [EmployeeMessageController::class, 'store']);
 

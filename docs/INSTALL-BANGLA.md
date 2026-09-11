@@ -48,6 +48,16 @@ database/TRUST-GROUP-ERP-COMPLETE-FRESH-INSTALL.sql
 SQL import করলে পরে `migrate:fresh`, `db:wipe` বা `--seed` চালাবেন না—এগুলো
 data reset করতে পারে।
 
+### ### Office Accounting যোগ করা
+
+এই release-এর Office Accounting module চালু করতে existing database-এর backup নিয়ে phpMyAdmin থেকে একবার import করুন:
+
+```text
+database/UPGRADE-OFFICE-ACCOUNTING.sql
+```
+
+এতে employee-wise QID fee, Monthly Fee, Company Car Rent এবং Personal Car Rent-এর account ও manual payment table যোগ হবে। Terminal বা Artisan command লাগবে না। এরপর নতুন frontend build upload করুন এবং browser hard refresh করুন।
+
 ### পুরোনো (৪ কোম্পানির) database আপগ্রেড
 
 আগের version-এ তৈরি database-এ উপরের fresh-install file **import করবেন না**—

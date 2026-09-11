@@ -26,6 +26,8 @@ document-expiry, vehicle and notification management system.
 - Audited Super Admin impersonation/role testing
 - Employees, documents, renewals, vehicles and driver history
 - Secure private file storage and authenticated downloads
+- Office Accounting: employee-wise QID fees, monthly fees, company/personal car rent,
+  manual payment entry, voucher tracking, balance and payment history
 - Expiry reminders with Email/SMS/WhatsApp provider adapters, queue retries and
   duplicate prevention
 - Notification templates, reports, CSV/XLSX/PDF export and bulk import preview
