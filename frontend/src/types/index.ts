@@ -415,6 +415,19 @@ export interface ProviderConfig {
   whatsappPhoneNumberId?: string;
 }
 
+export type AccountingType = 'monthly_fee' | 'company_car_rent' | 'personal_car_rent' | 'qid_fee';
+
+export interface AccountingAccount {
+  id: string; companyId: string; companyName?: string; employeeId?: string; employeeName?: string; vehicleId?: string; vehicleName?: string;
+  accountType: AccountingType; title: string; referenceNo?: string; startDate?: string; endDate?: string; amount: number; totalAmount?: number | null;
+  downPaymentPercent?: number | null; interestPercent?: number | null; programMonths?: number | null; status: 'active'|'completed'|'cancelled';
+  details?: Record<string, string | number | boolean | null>; notes?: string; totalDue: number; totalPaid: number; balance: number; createdAt?: string;
+}
+export interface AccountingPayment {
+  id: string; accountId: string; accountTitle?: string; accountType?: AccountingType; companyId: string; paymentDate?: string; dueDate?: string; periodLabel?: string;
+  amountDue: number; amountPaid: number; voucherNo?: string; paymentMethod?: string; status: 'due'|'partial'|'paid'; notes?: string;
+}
+
 export interface BankDocument {
   id: string;
   companyId: string;

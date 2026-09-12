@@ -63,7 +63,7 @@ class ProductionReadinessTest extends TestCase
         $this->withToken($login->json('token'))
             ->getJson('/api/bootstrap')
             ->assertOk()
-            ->assertJsonCount(4, 'data.companies')
+            ->assertJsonCount(5, 'data.companies')
             ->assertJsonCount(0, 'data.employees')
             ->assertJsonCount(0, 'data.documents')
             ->assertJsonCount(0, 'data.vehicles')

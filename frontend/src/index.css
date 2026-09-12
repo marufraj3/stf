@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+.input { width: 100%; margin-top: 0.35rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.55rem 0.7rem; font-size: 0.875rem; font-weight: 500; background: #fff; }
+.input:focus { outline: 2px solid #f59e0b; outline-offset: 1px; border-color: #f59e0b; }
+
 /* Indeterminate progress bar used by the global busy indicator. */
 @keyframes stf-progress {
   0% { transform: translateX(-100%); }

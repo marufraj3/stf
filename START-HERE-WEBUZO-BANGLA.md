@@ -76,7 +76,17 @@ Backup নিয়ে শুধু এটি একবার import করু�
 database/UPGRADE-STF-GROUP-5-COMPANIES.sql
 ```
 
-## ৫. Environment File
+## ৫. Office Accounting Database Upgrade
+
+পুরোনো live database হলে backup নিয়ে phpMyAdmin থেকে একবার import করুন:
+
+```text
+database/UPGRADE-OFFICE-ACCOUNTING.sql
+```
+
+এতে Monthly Fee, Company Car Rent, Personal Car Rent এবং employee-wise Company + QID Fee-এর manual payment tracking চালু হবে। Terminal access প্রয়োজন নেই। Fresh install SQL ব্যবহার করলে এই upgrade file আলাদা করে চালানোর দরকার নেই।
+
+## ৬. Environment File
 
 `backend/.env.example` copy করে `backend/.env` বানিয়ে অন্তত এগুলো দিন:
 

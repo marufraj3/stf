@@ -13,6 +13,7 @@ const DynamicDocumentsModule = lazy(() => import('./components/modules/DynamicDo
 const DocumentTypesModule = lazy(() => import('./components/modules/DocumentTypesModule').then(m => ({ default: m.DocumentTypesModule })));
 const VehicleModule = lazy(() => import('./components/modules/VehicleModule').then(m => ({ default: m.VehicleModule })));
 const BankDocumentsModule = lazy(() => import('./components/modules/BankDocumentsModule').then(m => ({ default: m.BankDocumentsModule })));
+const AccountingModule = lazy(() => import('./components/modules/AccountingModule').then(m => ({ default: m.AccountingModule })));
 const EmployeeMessageModule = lazy(() => import('./components/modules/EmployeeMessageModule').then(m => ({ default: m.EmployeeMessageModule })));
 const CompanyDocumentsModule = lazy(() => import('./components/modules/CompanyDocumentsModule').then(m => ({ default: m.CompanyDocumentsModule })));
 const RemindersModule = lazy(() => import('./components/modules/RemindersModule').then(m => ({ default: m.RemindersModule })));
@@ -41,6 +42,7 @@ const TAB_PERMISSIONS: Record<NavTab, string> = {
   'doc-types': 'document_types.view',
   vehicles: 'vehicles.view',
   'bank-docs': 'employees.view',
+  accounting: 'accounting.view',
   'emp-messages': 'employees.view',
   'company-docs': 'company_documents.view',
   reminders: 'notifications.view',
@@ -58,6 +60,7 @@ const TAB_PATHS: Record<NavTab, string> = {
   'doc-types': '/document-types',
   vehicles: '/vehicles',
   'bank-docs': '/bank-documents',
+  accounting: '/accounting',
   'emp-messages': '/employee-messages',
   'company-docs': '/company-documents',
   reminders: '/notifications',
@@ -300,6 +303,7 @@ export function App() {
                 />
               )}
               {currentTab === 'bank-docs' && (<BankDocumentsModule onRefresh={refreshData}/>)}
+              {currentTab === 'accounting' && (<AccountingModule onRefresh={refreshData}/>)}
               {currentTab === 'emp-messages' && (<EmployeeMessageModule onRefresh={refreshData}/>)}
 
               {currentTab === 'company-docs' && (

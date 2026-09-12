@@ -1,5 +1,7 @@
 import {
   ActivityLog,
+  AccountingAccount,
+  AccountingPayment,
   BankDocument,
   Company,
   Department,
@@ -378,6 +380,21 @@ class ApiBackedDatabase {
       direction: params.direction,
     }, '/audit-logs');
   }
+
+  async listAccountingAccounts(params: { accountType?: string; search?: string; status?: string; page?: number; pageSize?: number }): Promise<ServerPage<AccountingAccount>> {
+    return this.listResource<AccountingAccount>('accounting/accounts', { account_type: params.accountType, search: params.search, status: params.status, page: params.page, per_page: params.pageSize }, '/accounting/accounts');
+  }
+  async saveAccountingAccount(value: Partial<AccountingAccount>): Promise<AccountingAccount> {
+    const hasId = Boolean(value.id); const res = await apiRequest<{data: AccountingAccount}>(hasId ? `/accounting/accounts/${value.id}` : '/accounting/accounts', { method: hasId ? 'PUT' : 'POST', body: JSON.stringify(value) }); return res.data;
+  }
+  async deleteAccountingAccount(id: string): Promise<void> { await apiRequest(`/accounting/accounts/${id}`, { method: 'DELETE' }); }
+  async listAccountingPayments(params: { accountId?: string; accountType?: string; status?: string; page?: number; pageSize?: number }): Promise<ServerPage<AccountingPayment>> {
+    return this.listResource<AccountingPayment>('accounting/payments', { account_id: params.accountId, account_type: params.accountType, status: params.status, page: params.page, per_page: params.pageSize }, '/accounting/payments');
+  }
+  async saveAccountingPayment(value: Partial<AccountingPayment> & { accountId: string }): Promise<AccountingPayment> {
+    const hasId = Boolean(value.id); const res = await apiRequest<{data: AccountingPayment}>(hasId ? `/accounting/payments/${value.id}` : '/accounting/payments', { method: hasId ? 'PUT' : 'POST', body: JSON.stringify(value) }); return res.data;
+  }
+  async deleteAccountingPayment(id: string): Promise<void> { await apiRequest(`/accounting/payments/${id}`, { method: 'DELETE' }); }
 
   async listBankDocuments(params: {
     search?: string;

@@ -37,6 +37,7 @@ class DatabaseSeeder extends Seeder
             'reports.view', 'reports.export',
             'imports.view', 'imports.create',
             'audit.view',
+            'accounting.view', 'accounting.manage', 'accounting.payments.manage',
             'settings.view', 'settings.manage',
             'users.view', 'users.manage',
             'roles.view', 'roles.manage',
@@ -56,6 +57,7 @@ class DatabaseSeeder extends Seeder
                 'document_types.view', 'vehicles.view', 'company_documents.view', 'company_documents.manage',
                 'notifications.view', 'notifications.run', 'templates.view',
                 'reports.view', 'reports.export', 'imports.view', 'imports.create',
+                'accounting.view', 'accounting.manage', 'accounting.payments.manage',
                 'files.view', 'files.upload', 'files.download',
             ],
             'Manager' => [
@@ -67,13 +69,13 @@ class DatabaseSeeder extends Seeder
             ],
             'Accountant' => [
                 'dashboard.view', 'companies.view', 'employees.view', 'documents.view',
-                'company_documents.view', 'reports.view', 'reports.export', 'files.view', 'files.download',
+                'company_documents.view', 'reports.view', 'reports.export', 'accounting.view', 'accounting.manage', 'accounting.payments.manage', 'files.view', 'files.download',
             ],
             'Read-Only User' => [
                 'dashboard.view', 'companies.view', 'departments.view', 'designations.view',
                 'employees.view', 'documents.view', 'document_types.view', 'vehicles.view',
                 'company_documents.view', 'notifications.view', 'templates.view',
-                'reports.view', 'audit.view', 'files.view', 'files.download',
+                'reports.view', 'audit.view', 'accounting.view', 'files.view', 'files.download',
             ],
         ];
 
